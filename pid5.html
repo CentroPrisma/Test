@@ -4,80 +4,174 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PID-5 Adulto - Prisma</title>
+    <!-- Librerie esterne -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 15px; background-color: #f0f4f8; }
+        
         .header { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; border-top: 6px solid #2c3e50; }
         .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         h1 { font-size: 1.8rem; color: #2c3e50; margin: 0; }
         .clinic-signature { text-align: right; }
         .clinic-name { font-weight: 800; color: #2c3e50; font-size: 1.15rem; letter-spacing: 0.5px; }
         .clinic-city { color: #7f8c8d; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; }
+        
         .info-paziente { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 15px; margin-top: 20px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; }
         input[type="text"], input[type="date"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; font-size: 1rem; color: #1e293b; }
+        
+        /* DOMANDE A SCHEDE */
         .domanda-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 15px; border: 1px solid #e2e8f0; }
-        .testo-domanda { font-size: 1.15rem; color: #1e293b; font-weight: 500; margin-bottom: 15px; line-height: 1.4; }
-        .risposte-box { display: flex; justify-content: space-between; gap: 10px; }
-        .risposta-opzione { flex: 1; display: flex; flex-direction: column; align-items: center; background: #f8fafc; padding: 12px 5px; border-radius: 8px; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s; position: relative; }
+        .testo-domanda { font-size: 1.1rem; color: #1e293b; font-weight: 500; margin-bottom: 15px; line-height: 1.4; }
+        
+        .risposte-box { display: flex; justify-content: space-between; gap: 8px; }
+        .risposta-opzione { flex: 1; display: flex; flex-direction: column; align-items: center; background: #f8fafc; padding: 10px 5px; border-radius: 8px; border: 1px solid #e2e8f0; cursor: pointer; transition: all 0.2s; position: relative; }
         .risposta-opzione input { position: absolute; opacity: 0; cursor: pointer; }
-        .risposta-numero { font-size: 1.2rem; font-weight: 800; color: #3498db; }
-        .risposta-label { font-size: 0.75rem; color: #64748b; text-align: center; margin-top: 5px; font-weight: 500; text-transform: uppercase;}
+        .risposta-numero { font-size: 1.1rem; font-weight: 800; color: #3498db; }
+        .risposta-label { font-size: 0.7rem; color: #64748b; text-align: center; margin-top: 4px; font-weight: 500; text-transform: uppercase; }
+
+        /* EFFETTO SELEZIONATO */
         .risposta-opzione.selected { background-color: #2c3e50 !important; border-color: #1a252f; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         .risposta-opzione.selected .risposta-numero { color: white !important; }
         .risposta-opzione.selected .risposta-label { color: #cbd5e1 !important; }
+
+        /* RISULTATI */
         .btn-area { padding: 30px 0; text-align: center; }
-        .btn-calcola { background-color: #2c3e50; color: white; border: none; padding: 20px 40px; border-radius: 10px; font-size: 1.25rem; cursor: pointer; font-weight: bold; width: 100%; max-width: 600px; }
+        .btn-calcola { background-color: #2c3e50; color: white; border: none; padding: 20px 40px; border-radius: 10px; font-size: 1.25rem; cursor: pointer; font-weight: bold; width: 100%; max-width: 600px; box-shadow: 0 4px 15px rgba(44, 62, 80, 0.2); }
+        
         #risultati { display: none; background: #fff; padding: 30px; border-radius: 12px; margin-top: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border-top: 6px solid #27ae60; }
         .grid-risultati { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
         .box-punteggi { background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0; }
+        .box-punteggi h3 { margin-top: 0; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
         .score-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; border-bottom: 1px solid #f1f5f9; padding: 5px 0;}
         .score-row.domain { font-weight: 700; font-size: 1.1rem; color: #0284c7; }
+
         .charts-container { display: flex; flex-direction: column; gap: 40px; margin-top: 30px; }
         .chart-wrapper-radar { height: 400px; width: 100%; max-width: 500px; margin: 0 auto; }
         .chart-wrapper-bar { height: 600px; width: 100%; }
+        
         .download-buttons { display: flex; gap: 15px; justify-content: center; margin-top: 40px; flex-wrap: wrap; }
         .btn-pdf-report { background-color: #27ae60; color: white; border: none; padding: 18px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; min-width: 250px; font-size: 1.1rem; }
         .btn-pdf-risposte { background-color: #8e44ad; color: white; border: none; padding: 18px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; min-width: 250px; font-size: 1.1rem; }
-        @media screen and (max-width: 768px) { .header-top { flex-direction: column-reverse; align-items: flex-start; } .clinic-signature { text-align: left; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; width: 100%; } .info-paziente { grid-template-columns: 1fr; } .risposta-label { display: none; } .grid-risultati { grid-template-columns: 1fr; } }
+
+        @media screen and (max-width: 768px) {
+            .header-top { flex-direction: column-reverse; align-items: flex-start; }
+            .clinic-signature { text-align: left; border-bottom: 2px solid #f1f5f9; padding-bottom: 15px; width: 100%; }
+            .info-paziente { grid-template-columns: 1fr; }
+            .risposta-label { display: none; }
+            .grid-risultati { grid-template-columns: 1fr; }
+            #htmlFacet { column-count: 1; }
+        }
     </style>
 </head>
 <body>
+
 <div class="header">
     <div class="header-top">
-        <h1>PID-5 (Adulto)</h1>
+        <h1>PID-5 Adulto</h1>
         <div class="clinic-signature">
             <div class="clinic-name">Centro di psicoterapia - Prisma</div>
             <div class="clinic-city">Lecce</div>
         </div>
     </div>
-    <p style="font-size: 0.95rem; color: #475569; margin: 0; text-align: justify;"><strong>Istruzioni:</strong> Cerchi di descriversi nel modo più sincero possibile. Scelga la risposta che la descrive meglio.</p>
+    <p style="font-size: 0.95rem; color: #475569; margin: 0; text-align: justify; border-left: 4px solid #3498db; padding-left: 15px;">
+        <strong>Istruzioni:</strong> Scelga la risposta che la descrive nel modo migliore per ciascuna delle seguenti affermazioni. Non ci sono risposte giuste o sbagliate.
+    </p>
+    
     <div class="info-paziente">
-        <div><label style="font-weight:700;font-size:0.85rem;">ID PAZIENTE:</label><input type="text" id="pazienteId"></div>
-        <div><label style="font-weight:700;font-size:0.85rem;">ETÀ:</label><input type="number" id="etaPaziente"></div>
-        <div><label style="font-weight:700;font-size:0.85rem;">DATA:</label><input type="date" id="dataOggi"></div>
+        <div><label style="font-weight:700; font-size:0.8rem;">ID PAZIENTE:</label><input type="text" id="pazienteId"></div>
+        <div><label style="font-weight:700; font-size:0.8rem;">ETÀ:</label><input type="number" id="etaPaziente"></div>
+        <div><label style="font-weight:700; font-size:0.8rem;">DATA:</label><input type="date" id="dataOggi"></div>
     </div>
 </div>
+
 <div id="testBodyDiv"></div>
-<div class="btn-area"><button class="btn-calcola" onclick="calcolaRisultati()">Finalizza e Genera Scoring Clinico</button></div>
-<div id="risultati">
-    <h2 style="color: #27ae60; margin-top: 0; text-align: center; font-size: 1.8rem;">Risultati Clinici</h2>
-    <div class="grid-risultati">
-        <div class="box-punteggi"><h3>Domini</h3><div id="htmlDomini"></div></div>
-        <div class="box-punteggi"><h3>Facet</h3><div id="htmlFacet" style="column-count: 2; column-gap: 20px;"></div></div>
-        <div class="box-punteggi" style="grid-column: 1 / -1;"><h3>Specchietto Diagnostico</h3><div id="htmlDiagnosi" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;"></div></div>
-    </div>
-    <div class="charts-container"><div class="chart-wrapper-radar"><canvas id="domainChart"></canvas></div><div class="chart-wrapper-bar"><canvas id="facetChart"></canvas></div></div>
-    <div class="download-buttons"><button class="btn-pdf-report" onclick="generaPDFReport()">Report Clinico (PDF)</button><button class="btn-pdf-risposte" onclick="generaPDFRisposte()">Protocollo Risposte (PDF)</button></div>
+
+<div class="btn-area">
+    <button class="btn-calcola" onclick="calcolaRisultati()">Genera Report Clinico</button>
 </div>
+
+<div id="risultati">
+    <h2 style="color: #27ae60; margin-top: 0; text-align: center;">Scoring Clinico Completato</h2>
+    
+    <div class="grid-risultati">
+        <div class="box-punteggi">
+            <h3>Domini DSM-5</h3>
+            <div id="htmlDomini"></div>
+        </div>
+        <div class="box-punteggi">
+            <h3>Facet di Tratto</h3>
+            <div id="htmlFacet" style="column-count: 2; column-gap: 20px;"></div>
+        </div>
+        <div class="box-punteggi" style="grid-column: 1 / -1;">
+            <h3>Specchietto Diagnostico</h3>
+            <div id="htmlDiagnosi" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;"></div>
+        </div>
+    </div>
+    
+    <div class="charts-container">
+        <div class="chart-wrapper-radar"><canvas id="domainChart"></canvas></div>
+        <div class="chart-wrapper-bar"><canvas id="facetChart"></canvas></div>
+    </div>
+
+    <div class="download-buttons">
+        <button class="btn-pdf-report" onclick="generaPDFReport()">Scarica Report Dettagliato (PDF)</button>
+        <button class="btn-pdf-risposte" onclick="generaPDFRisposte()">Scarica Protocollo Risposte (PDF)</button>
+    </div>
+</div>
+
 <script>
     const itemInvertiti = [7, 30, 35, 58, 87, 90, 96, 97, 98, 131, 142, 155, 164, 177, 210, 215];
-    const facetMap = { "Affettività ridotta": [8, 45, 84, 91, 101, 167, 184], "Anedonia": [1, 23, 26, 30, 124, 155, 157, 189], "Angoscia di separazione": [12, 50, 57, 64, 127, 149, 175], "Ansia": [79, 93, 95, 96, 109, 110, 130, 141, 174], "Convinzioni ed esperienze inusuali": [94, 99, 106, 139, 143, 150, 194, 209], "Depressività": [27, 61, 66, 81, 86, 104, 119, 148, 151, 163, 168, 169, 178, 212], "Disregolazione percettiva": [36, 37, 42, 44, 59, 77, 83, 154, 192, 193, 213, 217], "Distraibilità": [6, 29, 47, 68, 88, 118, 132, 144, 199], "Eccentricità": [5, 21, 24, 25, 33, 52, 55, 70, 71, 152, 172, 185, 205], "Evitamento dell'intimità": [89, 97, 108, 120, 145, 203], "Grandiosità": [40, 65, 114, 179, 187, 197], "Impulsività": [4, 16, 17, 22, 58, 204], "Inganno": [41, 53, 56, 76, 126, 134, 142, 206, 214, 218], "Insensibilità": [11, 13, 19, 54, 72, 73, 90, 153, 166, 183, 198, 200, 207, 208], "Irresponsabilità": [31, 129, 156, 160, 171, 201, 210], "Labilità emotiva": [18, 62, 102, 122, 138, 165, 181], "Manipolatorietà": [107, 125, 162, 180, 219], "Ostilità": [28, 32, 38, 85, 92, 116, 158, 170, 188, 216], "Perfezionismo rigido": [34, 49, 105, 115, 123, 135, 140, 176, 196, 220], "Perseverazione": [46, 51, 60, 78, 80, 100, 121, 128, 137], "Ricerca di attenzione": [14, 43, 74, 111, 113, 173, 191, 211], "Ritiro": [10, 20, 75, 82, 136, 146, 147, 161, 182, 186], "Sospettosità": [2, 103, 117, 131, 133, 177, 190], "Sottomissione": [9, 15, 63, 202], "Tendenza a correre rischi": [3, 7, 35, 39, 48, 67, 69, 87, 98, 112, 159, 164, 195, 215] };
-    const domainMap = { "Affettività negativa": ["Labilità emotiva", "Ansia", "Angoscia di separazione", "Sottomissione", "Ostilità", "Perseverazione", "Sospettosità"], "Distacco": ["Ritiro", "Anedonia", "Evitamento dell'intimità", "Depressività", "Affettività ridotta", "Sospettosità"], "Antagonismo": ["Manipolatorietà", "Inganno", "Grandiosità", "Ricerca di attenzione", "Insensibilità", "Ostilità"], "Disinibizione": ["Irresponsabilità", "Impulsività", "Distraibilità", "Tendenza a correre rischi"], "Psicoticismo": ["Convinzioni ed esperienze inusuali", "Eccentricità", "Disregolazione percettiva"] };
-    const diagnosisMap = [ { title: "Antisociale", facets: ["Manipolatorietà", "Insensibilità", "Inganno", "Ostilità", "Tendenza a correre rischi", "Impulsività", "Irresponsabilità"] }, { title: "Evitante", facets: ["Ansia", "Ritiro", "Anedonia", "Evitamento dell'intimità"] }, { title: "Borderline", facets: ["Labilità emotiva", "Ansia", "Angoscia di separazione", "Depressività", "Impulsività", "Tendenza a correre rischi", "Ostilità"] }, { title: "Narcisista", facets: ["Grandiosità", "Ricerca di attenzione"] }, { title: "DOCp", facets: ["Perfezionismo rigido", "Perseverazione", "Evitamento dell'intimità", "Affettività ridotta"] }, { title: "Schizotipico", facets: ["Disregolazione percettiva", "Convinzioni ed esperienze inusuali", "Eccentricità", "Affettività ridotta", "Ritiro", "Sospettosità"] } ];
-    const testiDomande = ["Non traggo così tanto piacere dalle cose come gli altri sembrano trarne.", "Un sacco di gente ce l'ha con me.", "La gente mi descriverebbe come spericolato/a.", "Mi sento come se agissi completamente d'impulso.", "Spesso ho idee che sono troppo insolite per poterle spiegare a chiunque.", "Perdo il filo del discorso perché altre cose catturano la mia attenzione.", "Evito le situazioni rischiose.", "Quando si arriva alle mie emozioni, la gente mi dice che sono \"freddo/a come il marmo\".", "Modifico quello che faccio in base a quello che vogliono gli altri.", "Preferisco non entrare troppo in intimità con le persone.", "Spesso do inizio a scontri fisici.", "Sono terrorizzato/a dal restare senza qualcuno che mi ama.", "Essere scortese e ostile è proprio parte di ciò che sono.", "Faccio cose per essere certo che le persone mi notino.", "Solitamente faccio ciò che gli altri pensano che io dovrei fare.", "Solitamente faccio cose impulsivamente senza pensare a ciò che potrebbe accadere come conseguenza.", "Anche se avessi più buon senso, non riuscirei a smettere di prendere decisioni avventate.", "Talvolta le mie emozioni cambiano senza un valido motivo.", "Non m'importa nulla se faccio soffrire gli altri.", "Sto sulle mie.", "Spesso dico cose che gli altri trovano bizzarre o strane.", "Spesso faccio cose sull'impulso del momento.", "Nulla sembra interessarmi granché.", "Le altre persone sembrano considerare bizzarro il mio comportamento.", "Delle persone mi hanno detto che penso in modo davvero strano sulle cose.", "Non traggo quasi mai piacere dalla vita.", "Spesso mi sento come se nulla di ciò che faccio avesse importanza.", "Tratto male le persone quando fanno cose da poco che mi irritano.", "Non riesco a concentrarmi su alcunché.", "Sono una persona energica.", "Gli altri mi considerano irresponsabile.", "Quando mi serve, so essere cattivo.", "Spesso i miei pensieri se ne vanno in direzioni bizzarre o insolite.", "Mi è stato detto che impiego troppo tempo nell'assicurarmi che le cose siano esattamente al loro posto.", "Evito gli sport e le attività rischiose.", "Posso avere delle difficoltà a indicare la differenza tra i sogni e la vita reale.", "Talvolta ho la strana sensazione che parti del mio corpo sembrino come se fossero morte o come se non fossero mie.", "Mi arrabbio facilmente.", "Non ho limiti quando si tratta di fare cose pericolose.", "Per essere onesto, sono semplicemente più importante delle altre persone.", "Creo storie che si dà il caso che siano completamente false.", "La gente spesso dice che faccio delle cose di cui io non mi ricordo per nulla.", "Faccio delle cose affinché le persone debano ammirarmi per forza.", "È strano, ma a volte oggetti usuali sembrano avere una forma diversa dalla solita.", "Non ho reazioni emotive particolarmente durature verso le cose.", "Mi riesce difficile interrompere un'attività, anche quando è il momento di farlo.", "Non sono bravo/a a fare piani per il futuro.", "Faccio un sacco di cose che gli altri considerano pericolose.", "La gente mi dice che mi focalizzo troppo su dettagli trascurabili.", "Mi preoccupo un sacco di essere solo/a.", "Mi sono perso/a delle cose perché ero impegnato nel cercare di svolgere quello che stavo facendo nel modo esatto.", "Spesso i miei pensieri non hanno senso per gli altri.", "Spesso invento delle cose su di me affinché mi aiutino a ottenere quello che voglio.", "Vedere che altre persone vengono ferite non mi tocca per nulla.", "Spesso la gente mi guarda come se avessi detto qualcosa di davvero bizzarro.", "Le persone non si rendono conto che le sto adulando per ottenere qualcosa.", "Piuttosto che essere solo/a, preferirei avere una relazione insoddisfacente.", "Di solito penso prima di agire.", "Spesso vedo delle immagini irreali molto vivide quando mi sto addormentando o mi sto svegliando.", "Continuo ad approcciare le cose allo stesso modo, anche quando questo non funziona.", "Sono insoddisfattissimo/a di me.", "Ho reazioni emotive più forti della maggior parte delle altre persone.", "Faccio quello che le altre persone mi dicono di fare.", "Non sopporto di essere lasciato da solo/a, anche per poche ore.", "Ho qualità eccezionali che pochi altri possiedono.", "Il futuro mi sembra davvero senza speranza.", "Mi piace assumermi dei rischi.", "Non riesco a raggiungere degli obiettivi perché altre cose catturano la mia attenzione.", "Quando voglio fare qualcosa di potenzialmente rischioso non permetto che questo mi fermi.", "Gli altri sembrano ritenere che io sia un po' strano o insolito.", "I miei pensieri sono strani e imprevedibili.", "Non m'importa dei sentimenti delle altre persone.", "Nella vita devi pestare i piedi a un po' di persone per ottenere quello che vuoi.", "Adoro ottenere l'attenzione delle altre persone.", "Faccio l'impossibile per evitare qualsiasi attività di gruppo.", "So essere subdolo/a se questo significa ottenere ciò che voglio.", "A volte, quando guardo un oggetto familiare, in qualche modo è come se lo vedessi per la prima volta.", "Mi riesce difficile passare da un'attività a un'altra.", "Mi preoccupo molto per cose terribili che potrebbero accadere.", "Ho difficoltà a cambiare il modo in cui sto facendo qualcosa anche se ciò che sto facendo non sta andando bene.", "Il mondo sarebbe senz'altro migliore se fossi morto/a.", "Mi tengo a distanza dalle persone.", "Spesso non riesco a controllare quello che penso.", "Non divento emotivo/a.", "Mi risento se mi si dice quello che devo fare, anche se sono i responsabili a farlo.", "Mi vergogno così tanto dei molti modi meschini con cui ho deluso le persone.", "Evito di fare qualsiasi cosa che possa essere anche solo un po' rischiosa.", "Ho difficoltà a perseguire scopi specifici anche solo per brevi periodi di tempo.", "Preferisco tenere il romanticismo fuori dalla mia vita.", "Non farei mai del male a un'altra persona.", "Non manifesto intensamente le emozioni.", "Sono molto irritabile.", "Spesso mi preoccupo che avverrà qualcosa di brutto a causa di errori che ho commesso in passato.", "Ho delle capacità insolite, come per esempio sapere esattamente ciò che uno sta pensando.", "Quando penso al futuro, divento molto preoccupato/a.", "Raramente mi preoccupo per qualcosa.", "Trovo piacevole essere innamorato/a.", "Preferisco andare sul sicuro piuttosto che assumermi dei rischi non necessari.", "Talvolta ho sentito cose che gli altri non erano in grado di sentire.", "Mi fisso su certe cose e non riesco a smettere.", "La gente mi dice che è difficile conoscere ciò che provo.", "Sono una persona altamente emotiva.", "Se solo potessero, gli altri si approfitterebbero di me.", "Spesso mi sento come un/una fallito/a.", "Se qualcosa che faccio non è assolutamente perfetta, semplicemente è inaccettabile.", "Spesso ho esperienze insolite, come avvertire la presenza di qualcuno che non c'è realmente.", "Sono bravo a far fare alle persone ciò che voglio che facciano.", "Interrompo le relazioni se iniziano a diventare intime.", "Mi preoccupo sempre di qualcosa.", "Mi preoccupo pressoché di tutto.", "Mi piace distinguermi dalla massa.", "Ogni tanto un po' di rischio non mi dispiace.", "Il mio comportamento è spesso spavaldo e cattura l'attenzione delle persone.", "Sono migliore pressoché di chiunque altro.", "Le persone si lamentano del mio bisogno di avere ogni cosa completamente organizzata.", "Mi assicuro sempre di vendicarmi delle persone che mi hanno fatto un torto.", "Sto sempre in guardia per qualcuno che prova a imbrogliarmi o a farmi del male.", "Trovo difficile mantenere la mia mente concentrata su ciò che è necessario fare.", "Parlo molto del suicidio.", "Non sono granché interessato/a ad avere relazioni sessuali.", "Persevero un sacco nelle cose.", "Divento emotivo/a facilmente, spesso per un motivo da poco.", "Insisto per la perfezione assoluta in tutto ciò che faccio, anche se questo fa impazzire le altre persone.", "Non mi senti quasi mai felice delle mie attività quotidiane.", "Sviolinare gli altri mi aiuta a ottenere ciò che voglio.", "A volte c'è bisogno di fare affermazioni esagerate per fare strada.", "Temo il restare solo nella vita più di qualsiasi altra cosa.", "Persevero nel fare le cose in un certo modo, anche quando è chiaro che non funzionerà.", "Spesso sono piuttosto noncurante delle mie e delle altrui cose.", "Sono una persona molto ansiosa.", "Le persone sono sostanzialmente degne di fiducia.", "Vengo distratto/a facilmente.", "Sembra che io venga sempre trattato/a ingiustamente dagli altri.", "Non esito a barare se questo può farmi fare strada.", "Controllo le cose diverse volte per assicurarmi che siano perfette.", "Non mi piace passare il tempo con gli altri.", "Mi senti obbligato/a a continuare le cose anche quando ha poco senso fare così.", "Non so mai dove andranno le mie emozioni da un momento all'altro.", "Ho visto cose che non c'erano realmente.", "Per me è importante che le cose siano fatte in un certo modo.", "Mi aspetto sempre che accada il peggio.", "Cerco sempre di dire la verità anche quando è difficile.", "Credo che alcune persone possano muovere gli oggetti usando la loro mente.", "Non riesco a concentrarmi sulle cose molto a lungo.", "Mi tengo alla larga dalle relazioni sentimentali.", "Non mi interessa fare amicizie.", "Quando tratto con le persone, dico il meno possibile.", "Sono una persona inutile.", "Farei pressoché di tutto per impedire a una persona di abbandonarmi.", "A volte riesco a influenzare le altre persone inviando loro i miei pensieri.", "La vita mi sembra piuttosto deprimente.", "Penso alle cose in modi talmente strani che per la maggior parte delle persone non hanno senso.", "Non m'importa se le mie azioni fanno del male agli altri.", "A volte mi sento \"controllato/a\" da pensieri che appartengono a qualcun altro.", "Vivo la vita davvero appienissimo.", "Faccio promesse che non ho davvero intenzione di mantenere.", "Niente sembra farmi sentire bene.", "Vengo irritato/a facilmente da ogni sorta di cose.", "Faccio ciò che voglio senza badare a quanto possa essere pericoloso.", "Spesso dimentico di pagare i miei conti.", "Non mi piace entrare troppo in intimità con le persone.", "Sono bravo/a a raggirare le persone.", "Tutto mi sembra inutile.", "Non rischio mai.", "Divento emotivo/a per ogni cosa da poco.", "Se ferisco i sentimenti delle altre persone non è nulla di eccezionale.", "Non mostro mai le emozioni agli altri.", "Spesso mi sento proprio infelice.", "Non valgo nulla come persona.", "Di solito sono piuttosto ostile.", "Sono sparito/a per evitare delle responsabilità.", "Mi è stato detto più di una volta che ho parecchie strane manie o abitudini.", "Mi piace essere una persona che viene notata.", "Sono sempre timoroso/a o nervoso/a per delle brutte cose che potrebbero verificarsi.", "Non voglio mai essere solo/a.", "Continuo a cercare di rendere le cose perfette, anche quando le ho fatte tanto bene quanto è verosimile farle.", "È raro che io abbia la sensazione che le persone che conosco stiano tentando di approfittarsi di me.", "So che prima o poi mi suiciderò.", "Ho avuto molto più successo pressoché di chiunque altro io conosca.", "So tirar fuori tutto il mio fascino se mi serve per averla vinta.", "Le mie emozioni sono imprevedibili.", "Non ho a che fare con le persone a meno che non sia necessario.", "Non mi interessano i problemi delle altre persone.", "Non reagisco molto a cose che sembrano rendere emotivi gli altri.", "Ho svariate abitudini che gli altri trovano eccentriche o strane.", "Evito gli eventi sociali.", "Merito un trattamento speciale.", "Mi fa davvero arrabbiare quando le persone mi offendono anche in modo trascurabile.", "Raramente mi entusiasmo per qualcosa.", "Sospetto che persino i miei cosiddetti \"amici\" mi tradiscano molto.", "Bramo l'attenzione.", "Talvicina penso che qualcun altro stia sottraendo dei pensieri dalla mia testa.", "Ho periodi in cui mi sento disconnesso/a dal mondo o da me stesso/a.", "Spesso vedo delle connessioni insolite tra le cose che la maggior parte delle persone non nota.", "Quando sto facendo delle cose che potrebbero essere pericolose non penso alla possibilità di farmi male.", "Semplicemente non sopporto che le cose siano fuori dal loro posto corretto.", "Spesso devo avere a che fare con persone che sono meno importanti di me.", "Talvolta colpisco le persone per ricordare loro chi comanda.", "Vengo distolto/a da un compito anche da distrazioni trascurabili.", "Provo piacere a fare apparire stupide le persone in autorità.", "Se non sono in vena, salto gli appuntamenti o gli incontri.", "Cerco di fare ciò che gli altri vogliono che io faccia.", "Preferisco essere solo/a che avere un partner sentimentale intimo.", "Sono molto impulsivo.", "Spesso ho pensieri che per me hanno senso, ma che le altre persone dicono che sono strani.", "Uso le persone per ottenere ciò che voglio.", "Non vedo il senso di sentirmi in colpa su delle cose che ho fatto che hanno ferito altre persone.", "La maggior parte delle volte non vedo il senso di essere cordiale.", "Ho avuto alcune esperienze davvero strane che sono molto difficili da spiegare.", "Porto a compimento gli impegni.", "Mi piace attirare l'attenzione su di me.", "Molte volte mi sento in colpa.", "Spesso mi estraneo e poi all'improvviso torno presente e mi rendo conto che è passato un sacco di tempo.", "Mi riesce facile mentire.", "Detesto correre rischi.", "Sono sgradevole e sgarbato/a con chiunque se lo meriti.", "Spesso le cose intorno a me sembrano irreali, o più reali del solito.", "Ingigantisco le cose se è a mio vantaggio.", "Mi riesce facile approfittare degli altri.", "Ho un modo rigoroso di fare le cose."];
+    const facetMap = {
+        "Affettività ridotta": [8, 45, 84, 91, 101, 167, 184],
+        "Anedonia": [1, 23, 26, 30, 124, 155, 157, 189],
+        "Angoscia di separazione": [12, 50, 57, 64, 127, 149, 175],
+        "Ansia": [79, 93, 95, 96, 109, 110, 130, 141, 174],
+        "Convinzioni ed esperienze inusuali": [94, 99, 106, 139, 143, 150, 194, 209],
+        "Depressività": [27, 61, 66, 81, 86, 104, 119, 148, 151, 163, 168, 169, 178, 212],
+        "Disregolazione percettiva": [36, 37, 42, 44, 59, 77, 83, 154, 192, 193, 213, 217],
+        "Distraibilità": [6, 29, 47, 68, 88, 118, 132, 144, 199],
+        "Eccentricità": [5, 21, 24, 25, 33, 52, 55, 70, 71, 152, 172, 185, 205],
+        "Evitamento dell'intimità": [89, 97, 108, 120, 145, 203],
+        "Grandiosità": [40, 65, 114, 179, 187, 197],
+        "Impulsività": [4, 16, 17, 22, 58, 204],
+        "Inganno": [41, 53, 56, 76, 126, 134, 142, 206, 214, 218],
+        "Insensibilità": [11, 13, 19, 54, 72, 73, 90, 153, 166, 183, 198, 200, 207, 208],
+        "Irresponsabilità": [31, 129, 156, 160, 171, 201, 210],
+        "Labilità emotiva": [18, 62, 102, 122, 138, 165, 181],
+        "Manipolatorietà": [107, 125, 162, 180, 219],
+        "Ostilità": [28, 32, 38, 85, 92, 116, 158, 170, 188, 216],
+        "Perfezionismo rigido": [34, 49, 105, 115, 123, 135, 140, 176, 196, 220],
+        "Perseverazione": [46, 51, 60, 78, 80, 100, 121, 128, 137],
+        "Ricerca di attenzione": [14, 43, 74, 111, 113, 173, 191, 211],
+        "Ritiro": [10, 20, 75, 82, 136, 146, 147, 161, 182, 186],
+        "Sospettosità": [2, 103, 117, 131, 133, 177, 190],
+        "Sottomissione": [9, 15, 63, 202],
+        "Tendenza a correre rischi": [3, 7, 35, 39, 48, 67, 69, 87, 98, 112, 159, 164, 195, 215]
+    };
+
+    const domainMap = {
+        "Affettività negativa": ["Labilità emotiva", "Ansia", "Angoscia di separazione", "Sottomissione", "Ostilità", "Perseverazione", "Sospettosità"],
+        "Distacco": ["Ritiro", "Anedonia", "Evitamento dell'intimità", "Depressività", "Affettività ridotta", "Sospettosità"],
+        "Antagonismo": ["Manipolatorietà", "Inganno", "Grandiosità", "Ricerca di attenzione", "Insensibilità", "Ostilità"],
+        "Disinibizione": ["Irresponsabilità", "Impulsività", "Distraibilità", "Tendenza a correre rischi"],
+        "Psicoticismo": ["Convinzioni ed esperienze inusuali", "Eccentricità", "Disregolazione percettiva"]
+    };
+
+    const diagnosisMap = [
+        { title: "Antisociale", facets: ["Manipolatorietà", "Insensibilità", "Inganno", "Ostilità", "Tendenza a correre rischi", "Impulsività", "Irresponsabilità"] },
+        { title: "Evitante", facets: ["Ansia", "Ritiro", "Anedonia", "Evitamento dell'intimità"] },
+        { title: "Borderline", facets: ["Labilità emotiva", "Ansia", "Angoscia di separazione", "Depressività", "Impulsività", "Tendenza a correre rischi", "Ostilità"] },
+        { title: "Narcisista", facets: ["Grandiosità", "Ricerca di attenzione"] },
+        { title: "DOCp", facets: ["Perfezionismo rigido", "Perseverazione", "Evitamento dell'intimità", "Affettività ridotta"] },
+        { title: "Schizotipico", facets: ["Disregolazione percettiva", "Convinzioni ed esperienze inusuali", "Eccentricità", "Affettività ridotta", "Ritiro", "Sospettosità"] }
+    ];
+
+    const testiDomande = ["Non traggo così tanto piacere dalle cose come gli altri sembrano trarne.", "Un sacco di gente ce l'ha con me.", "La gente mi descriverebbe come spericolato/a.", "Mi sento come se agissi completamente d'impulso.", "Spesso ho idee che sono troppo insolite per poterle spiegare a chiunque.", "Perdo il filo del discorso perché altre cose catturano la mia attenzione.", "Evito le situazioni rischiose.", "Quando si arriva alle mie emozioni, la gente mi dice che sono \"freddo/a come il marmo\".", "Modifico quello che faccio in base a quello che vogliono gli altri.", "Preferisco non entrare troppo in intimità con le persone.", "Spesso do inizio a scontri fisici.", "Sono terrorizzato/a dal restare senza qualcuno che mi ama.", "Essere scortese e ostile è proprio parte di ciò che sono.", "Faccio cose per essere certo che le persone mi notino.", "Solitamente faccio ciò che gli altri pensano che io dovrei fare.", "Solitamente faccio cose impulsivamente senza pensare a ciò che potrebbe accadere come conseguenza.", "Anche se avessi più buon senso, non riuscirei a smettere di prendere decisioni avventate.", "Talvolta le mie emozioni cambiano senza un valido motivo.", "Non m'importa nulla se faccio soffrire gli altri.", "Sto sulle mie.", "Spesso dico cose che gli altri trovano bizzarre o strane.", "Spesso faccio cose sull'impulso del momento.", "Nulla sembra interessarmi granché.", "Le altre persone sembrano considerare bizzarro il mio comportamento.", "Delle persone mi hanno detto che penso in modo davvero strano sulle cose.", "Non traggo quasi mai piacere dalla vita.", "Spesso mi sento come se nulla di ciò che faccio avesse importanza.", "Tratto male le persone quando fanno cose da poco che mi irritano.", "Non riesco a concentrarmi su alcunché.", "Sono una persona energica.", "Gli altri mi considerano irresponsabile.", "Quando mi serve, so essere cattivo.", "Spesso i miei pensieri se ne vanno in direzioni bizzarre o insolite.", "Mi è stato detto che impiego troppo tempo nell'assicurarmi che le cose siano esattamente al loro posto.", "Evito gli sport e le attività rischiose.", "Posso avere delle difficoltà a indicare la differenza tra i sogni e la vita reale.", "Talvolta ho la strana sensazione che parti del mio corpo sembrino come se fossero morte o come se non fossero mie.", "Mi arrabbio facilmente.", "Non ho limiti quando si tratta di fare cose pericolose.", "Per essere onesto, sono semplicemente più importante delle altre persone.", "Creo storie che si dà il caso che siano completamente false.", "La gente spesso dice che faccio delle cose di cui io non mi ricordo per nulla.", "Faccio delle cose affinché le persone debano ammirarmi per forza.", "È strano, ma a volte oggetti usuali sembrano avere una forma diversa dalla solita.", "Non ho reazioni emotive particolarmente durature verso le cose.", "Mi riesce difficile interrompere un'attività, anche quando è il momento di farlo.", "Non sono bravo/a a fare piani per il futuro.", "Faccio un sacco di cose che gli altri considerano pericolose.", "La gente mi dice che mi focalizzo troppo su dettagli trascurabili.", "Mi preoccupo un sacco di essere solo/a.", "Mi sono perso/a delle cose perché ero impegnato nel cercare di svolgere quello che stavo facendo nel modo esatto.", "Spesso i miei pensieri non hanno senso per gli altri.", "Spesso invento delle cose su di me affinché mi aiutino a ottenere quello che voglio.", "Vedere che altre persone vengono ferite non mi tocca per nulla.", "Spesso la gente mi guarda come se avessi detto qualcosa di davvero bizzarro.", "Le persone non si rendono conto che le sto adulando per ottenere qualcosa.", "Piuttosto che essere solo/a, preferirei avere una relazione insoddisfacente.", "Di solito penso prima di agire.", "Spesso vedo delle immagini irreali molto vivide quando mi sto addormentando o mi sto svegliando.", "Continuo ad approcciare le cose allo stesso modo, anche quando questo non funziona.", "Sono insoddisfattissimo/a di me.", "Ho reazioni emotive più forti della maggior parte delle altre persone.", "Faccio quello che le altre persone mi dicono di fare.", "Non sopporto di essere lasciato da solo/a, anche per poche ore.", "Ho qualità eccezionali che pochi altri possiedono.", "Il futuro mi sembra davvero senza speranza.", "Mi piace assumermi dei rischi.", "Non riesco a raggiungere degli obiettivi perché altre cose catturano la mia attenzione.", "Quando voglio fare qualcosa di potenzialmente rischioso non permetto che questo mi fermi.", "Gli altri sembrano ritenere che io sia un po' strano o insolito.", "I miei pensieri sono strani e imprevedibili.", "Non m'importa dei sentimenti delle altre persone.", "Nella vita devi pestare i piedi a un po' di persone per ottenere quello che vuoi.", "Adoro ottenere l'attenzione delle altre persone.", "Faccio l'impossibile per evitare qualsiasi attività di gruppo.", "So essere subdolo/a se questo significa ottenere ciò che voglio.", "A volte, quando guardo un oggetto familiare, in qualche modo è come se lo vedessi per la prima volta.", "Mi riesce difficile passare da un'attività a un'altra.", "Mi preoccupo molto per cose terribili che potrebbero accadere.", "Ho difficoltà a cambiare il modo in cui sto facendo qualcosa anche se ciò che sto facendo non sta andando bene.", "Il mondo sarebbe senz'altro migliore se fossi morto/a.", "Mi tengo a distanza dalle persone.", "Spesso non riesco a controllare quello che penso.", "Non divento emotivo/a.", "Mi risento se mi si dice quello che devo fare, anche se sono i responsabili a farlo.", "Mi vergogno così tanto dei molti modi meschini con cui ho deluso le persone.", "Evito di fare qualsiasi cosa che possa essere anche solo un po' rischiosa.", "Ho difficoltà a perseguire scopi specifici anche solo per brevi periodi di tempo.", "Preferisco tenere il romanticismo fuori dalla mia vita.", "Non farei mai del male a un'altra persona.", "Non manifesto intensamente le emozioni.", "Sono molto irritabile.", "Spesso mi preoccupo che avverrà qualcosa di brutto a causa di errori che ho commesso in passato.", "Ho delle capacità insolite, come per esempio sapere esattamente ciò che uno sta pensando.", "Quando penso al futuro, divento molto preoccupato/a.", "Raramente mi preoccupo per qualcosa.", "Trovo piacevole essere innamorato/a.", "Preferisco andare sul sicuro piuttosto che assumermi dei rischi non necessari.", "Talvolta ho sentito cose che gli altri non erano in grado di sentire.", "Mi fisso su certe cose e non riesco a smettere.", "La gente mi dice che è difficile conoscere ciò che provo.", "Sono una persona altamente emotiva.", "Se solo potessero, gli altri si approfitterebbero di me.", "Spesso mi sento come un/una fallito/a.", "Se qualcosa che faccio non è assolutamente perfetta, semplicemente è inaccettabile.", "Spesso ho esperienze insolite, come avvertire la presenza di qualcuno che non c'è realmente.", "Sono bravo a far fare alle persone ciò che voglio che facciano.", "Interrompo le relazioni se iniziano a diventare intime.", "Mi preoccupo sempre di qualcosa.", "Mi preoccupo pressoché di tutto.", "Mi piace distinguermi dalla massa.", "Ogni tanto un po' di rischio non mi dispiace.", "Il mio comportamento è spesso spavaldo e cattura l'attenzione delle persone.", "Sono migliore pressoché di chiunque altro.", "Le persone si lamentano del mio bisogno di avere ogni cosa completamente organizzata.", "Mi assicuro sempre di vendicarmi delle persone che mi hanno fatto un torto.", "Sto sempre in guardia per qualcuno che prova a imbrogliarmi o a farmi del male.", "Trovo difficile mantenere la mia mente concentrata su ciò che è necessario fare.", "Parlo molto del suicidio.", "Non sono granché interessato/a ad avere relazioni sessuali.", "Persevero un sacco nelle cose.", "Divento emotivo/a facilmente, spesso per un motivo da poco.", "Insisto per la perfezione assoluta in tutto ciò che faccio, anche se questo fa impazzire le altre persone.", "Non mi senti quasi mai felice delle mie attività quotidiane.", "Sviolinare gli altri mi aiuta a ottenere ciò che voglio.", "A volte c'è bisogno di fare affermazioni esagerate per fare strada.", "Temo il restare solo nella vita più di qualsiasi altra cosa.", "Persevero nel fare le cose in un certo modo, anche quando è chiaro che non funzionerà.", "Spesso sono piuttosto noncurante delle mie e delle altrui cose.", "Sono una persona molto ansiosa.", "Le persone sono sostanzialmente degne di fiducia.", "Vengo distratto/a facilmente.", "Sembra che io venga sempre trattato/a ingiustamente dagli altri.", "Non esito a barare se questo può farmi fare strada.", "Controllo le cose diverse volte per assicurarmi che siano perfette.", "Non mi piace passare il tempo con gli altri.", "Mi senti obbligato/a a continuare le cose anche quando ha poco senso fare così.", "Non so mai dove andranno le mie emozioni da un momento all'altro.", "Ho visto cose che non c'erano realmente.", "Per me è importante che le cose siano fatte in un certo modo.", "Mi aspetto sempre che accada il peggio.", "Cerco sempre di dire la verità anche quando è difficile.", "Credo che alcune persone possano muovere gli oggetti usando la loro mente.", "Non riesco a concentrarmi sulle cose molto a lungo.", "Mi tengo alla larga dalle relazioni sentimentali.", "Non mi interessa fare amicizie.", "Quando tratto con le persone, dico il meno possibile.", "Sono una persona inutile.", "Farei pressoché di tutto per impedire a una persona di abbandonarmi.", "A volte riesco a influenzare le altre persone inviando loro i miei pensieri.", "La vita mi sembra piuttosto deprimente.", "Penso alle cose in modi talmente strani che per la maggior parte delle persone non hanno senso.", "Non m'importa se le mie azioni fanno del male agli altri.", "A volte mi sento \"controllato/a\" da pensieri che appartengono a qualcun altro.", "Vivo la vita davvero appienissimo.", "Faccio promesse che non ho davvero intenzione di mantenere.", "Niente sembra farmi sentire bene.", "Vengo irritato/a facilmente da ogni sorta di cose.", "Faccio ciò che voglio senza badare a quanto possa essere pericoloso.", "Spesso dimentico di pagare i miei conti.", "Non mi piace entrare troppo in intimità con le persone.", "Sono bravo/a a raggirare le persone.", "Tutto mi sembra inutile.", "Non rischio mai.", "Divento emotivo/a per ogni cosa da poco.", "Se ferisco i sentimenti delle altre persone non è nulla di eccezionale.", "Non mostro mai le emozioni agli altri.", "Spesso mi sento proprio infelice.", "Non valgo nulla come persona.", "Di solito sono piuttosto ostile.", "Sono sparito/a per evitare delle responsabilità.", "Mi è stato detto più di una volta che ho parecchie strane manie o abitudini.", "Mi piace essere una persona che viene notata.", "Sono sempre timoroso/a o nervoso/a per delle brutte cose che potrebbero verificarsi.", "Non voglio mai essere solo/a.", "Continuo a cercare di rendere le cose perfette, anche quando le ho fatte tanto bene quanto è verosimile farle.", "È raro che io abbia la sensazione che le persone che conosco stiano tentando di approfittarsi di me.", "So che prima o poi mi suiciderò.", "Ho avuto molto più successo pressoché di chiunque altro io conosca.", "So tirar fuori tutto il mio fascino se mi serve per averla vinta.", "Le mie emozioni sono imprevedibili.", "Non ho a che fare con le persone a meno che non sia necessario.", "Non mi interessano i problemi delle altre persone.", "Non reagisco molto a cose che sembrano rendere emotivi gli altri.", "Ho svariate abitudini che gli altri trovano eccentriche o strane.", "Evito gli eventi sociali.", "Merito un trattamento speciale.", "Mi fa davvero arrabbiare quando le persone mi offendono anche in modo trascurabile.", "Raramente mi entusiasmo per qualcosa.", "Sospetto che persino i miei cosiddetti \"amici\" mi tradiscano molto.", "Bramo l'attenzione.", "Talvicina penso che qualcun altro stia sottraendo dei pensieri dalla mia testa.", "Ho periodi in cui mi sento disconnesso/a dal mondo o da me stesso/a.", "Spesso vedo delle connessioni insolite tra le cose che la maggior parte delle persone non nota.", "Quando sto facendo delle cose che potrebbero essere pericolose non penso alla possibilità di farmi male.", "Semplicemente non sopporto che le cose siano fuori dal loro posto corretto.", "Spesso devo avere a che fare con persone che sono meno importanti di me.", "Talvolta colpisco le persone per ricordare loro chi comanda.", "Vengo distolt/a da un compito anche da distrazioni trascurabili.", "Provo piacere a fare apparire stupide le persone in autorità.", "Se non sono in vena, salto gli appuntamenti o gli incontri.", "Cerco di fare ciò che gli altri vogliono che io faccia.", "Preferisco essere solo/a che avere un partner sentimentale intimo.", "Sono molto impulsivo.", "Spesso ho pensieri che per me hanno senso, ma che le altre persone dicono che sono strani.", "Uso le persone per ottenere ciò che voglio.", "Non vedo il senso di sentirmi in colpa su delle cose che ho fatto che hanno ferito altre persone.", "La maggior parte delle volte non vedo il senso di essere cordiale.", "Ho avuto alcune esperienze davvero strane che sono molto difficili da spiegare.", "Porto a compimento gli impegni.", "Mi piace attirare l'attenzione su di me.", "Molte volte mi sento in colpa.", "Spesso mi estraneo e poi all'improvviso torno presente e mi rendo conto che è passato un sacco di tempo.", "Mi riesce facile mentire.", "Detesto correre rischi.", "Sono sgradevole e sgarbato/a con chiunque se lo meriti.", "Spesso le cose intorno a me sembrano irreali, o più reali del solito.", "Ingigantisco le cose se è a mio vantaggio.", "Mi riesce facile approfittare degli altri.", "Ho un modo rigoroso di fare le cose."];
+
     let chartD = null, chartF = null, risposteSalvate = [];
     let risultatiFacet = {}, risultatiDomini = {};
+
     (function() {
         const labels = ["Spesso Falso", "Talvolta Falso", "Talvolta Vero", "Spesso Vero"];
         let html = "";
@@ -92,16 +186,21 @@
         document.getElementById('testBodyDiv').innerHTML = html;
         document.getElementById('dataOggi').value = new Date().toISOString().split('T')[0];
     })();
+
     function selectColor(n, j) {
         for (let i = 0; i <= 3; i++) { document.getElementById(`lab_${n}_${i}`).classList.remove('selected'); }
         document.getElementById(`lab_${n}_${j}`).classList.add('selected');
     }
+
     function calcolaRisultati() {
         let scores = {};
+        risposteSalvate = [];
         for (let k = 1; k <= 220; k++) {
             let sel = document.querySelector(`input[name="q${k}"]:checked`);
-            if (!sel) { alert("Manca la risposta " + k); document.getElementById(`q_${k}`).scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
-            let val = parseInt(sel.value); scores[k] = itemInvertiti.includes(k) ? (3 - val) : val;
+            if (!sel) { alert("Attenzione: manca la risposta numero " + k); document.getElementById(`q_${k}`).scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+            let val = parseInt(sel.value); 
+            risposteSalvate.push({ id: k, risp: val, testo: testiDomande[k-1] });
+            scores[k] = itemInvertiti.includes(k) ? (3 - val) : val;
         }
         let fHTML = "";
         for (let f in facetMap) {
@@ -118,34 +217,125 @@
             risultatiDomini[d] = mediaD;
             dHTML += `<div class="score-row domain"><span>${d}</span> <span>${mediaD}</span></div>`;
         }
-        document.getElementById('htmlDomini').innerHTML = dHTML;
-        let diagHTML = "";
+        document.getElementById('htmlDiagnosi').innerHTML = "";
         diagnosisMap.forEach(d => {
-            diagHTML += `<div class="box-punteggi" style="background:white;"><h4 style="margin:0 0 10px 0; color:#3498db;">${d.title}</h4>`;
+            let diagHTML = `<div class="box-punteggi" style="background:white;"><h4 style="margin:0 0 10px 0; color:#3498db;">${d.title}</h4>`;
             d.facets.forEach(f => { diagHTML += `<div class="score-row"><span>${f}</span> <strong>${risultatiFacet[f]}</strong></div>`; });
             diagHTML += `</div>`;
+            document.getElementById('htmlDiagnosi').innerHTML += diagHTML;
         });
-        document.getElementById('htmlDiagnosi').innerHTML = diagHTML;
         document.getElementById('risultati').style.display = 'block';
         window.scrollTo({ top: document.getElementById('risultati').offsetTop, behavior: 'smooth' });
         renderCharts();
     }
+
     function renderCharts() {
         if (chartD) chartD.destroy(); if (chartF) chartF.destroy();
-        chartD = new Chart(document.getElementById('domainChart'), { type: 'radar', data: { labels: Object.keys(risultatiDomini), datasets: [{ label: 'Domini', data: Object.values(risultatiDomini), backgroundColor: 'rgba(52,152,219,0.2)', borderColor: '#2980b9' }] }, options: { scales: { r: { min: 0, max: 3 } } } });
-        chartF = new Chart(document.getElementById('facetChart'), { type: 'bar', data: { labels: Object.keys(risultatiFacet), datasets: [{ label: 'Facet', data: Object.values(risultatiFacet), backgroundColor: '#27ae60' }] }, options: { indexAxis: 'y', scales: { x: { min: 0, max: 3 } } } });
+        chartD = new Chart(document.getElementById('domainChart'), { type: 'radar', data: { labels: Object.keys(risultatiDomini), datasets: [{ label: 'Profilo Domini', data: Object.values(risultatiDomini), backgroundColor: 'rgba(52,152,219,0.2)', borderColor: '#2980b9', pointBackgroundColor: '#2980b9' }] }, options: { scales: { r: { min: 0, max: 3, ticks: { stepSize: 1 } } } } });
+        chartF = new Chart(document.getElementById('facetChart'), { type: 'bar', data: { labels: Object.keys(risultatiFacet), datasets: [{ label: 'Profilo Facet', data: Object.values(risultatiFacet), backgroundColor: 'rgba(39, 174, 96, 0.7)', borderColor: '#27ae60', borderWidth: 1 }] }, options: { indexAxis: 'y', scales: { x: { min: 0, max: 3 } } } });
     }
+
     function generaPDFReport() {
-        const { jsPDF } = window.jspdf; const doc = new jsPDF(); const id = document.getElementById('pazienteId').value || "Anonimo";
-        doc.setFontSize(18); doc.text("Report Clinico PID-5", 15, 20); doc.setFontSize(10); doc.text("Centro Prisma - Lecce", 195, 15, { align: "right" });
-        doc.text(`Paziente: ${id} | Età: ${document.getElementById('etaPaziente').value} | Data: ${document.getElementById('dataOggi').value}`, 15, 30);
-        let y = 45; for(let d in risultatiDomini) { doc.text(`${d}: ${risultatiDomini[d]}`, 15, y); y+=7; }
-        doc.addPage(); doc.text("Specchietto Diagnostico", 15, 20); let dy = 30;
-        diagnosisMap.forEach(d => { if (dy > 250) { doc.addPage(); dy = 20; } doc.setFont(undefined, 'bold'); doc.text(d.title, 15, dy); doc.setFont(undefined, 'normal'); dy += 5; d.facets.forEach(f => { doc.text(`- ${f}: ${risultatiFacet[f]}`, 20, dy); dy += 5; }); dy += 5; });
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const id = document.getElementById('pazienteId').value || "Anonimo";
+        const eta = document.getElementById('etaPaziente').value || "N/D";
+        const data = document.getElementById('dataOggi').value;
+
+        // Header
+        doc.setFontSize(20); doc.setTextColor(44, 62, 80); doc.text("Relazione Clinica PID-5", 15, 20);
+        doc.setFontSize(10); doc.setFont(undefined, 'bold'); doc.text("Centro di psicoterapia - Prisma", 195, 15, { align: "right" });
+        doc.setFont(undefined, 'normal'); doc.text("Lecce", 195, 20, { align: "right" });
+        doc.line(15, 25, 195, 25);
+
+        // Paziente info
+        doc.setFontSize(11); doc.text(`Paziente: ${id}`, 15, 35); doc.text(`Età: ${eta}`, 100, 35); doc.text(`Data: ${data}`, 160, 35);
+
+        // Sezione 1: Domini
+        doc.setFontSize(14); doc.setTextColor(2, 132, 199); doc.text("1. Domini di Personalità (DSM-5)", 15, 50);
+        doc.setFontSize(9); doc.setTextColor(80, 80, 80);
+        doc.text("I punteggi rappresentano la media (0-3). Valori superiori a 1.5 indicano tratti significativi.", 15, 55);
+
+        let y = 65;
+        doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+        for(let d in risultatiDomini) {
+            doc.setFont(undefined, 'bold'); doc.text(d + ":", 15, y);
+            doc.setFont(undefined, 'normal'); doc.text(risultatiDomini[d], 70, y);
+            y += 6;
+        }
+
+        // Radar Chart
+        try {
+            const canvasD = document.getElementById('domainChart');
+            const imgD = canvasD.toDataURL('image/png', 1.0);
+            doc.addImage(imgD, 'PNG', 45, y + 5, 120, 90);
+            y += 105;
+        } catch(e) {}
+
+        // Sezione 2: Facet
+        doc.addPage();
+        doc.setFontSize(14); doc.setTextColor(39, 174, 96); doc.text("2. Facet di Tratto", 15, 20);
+        doc.line(15, 23, 195, 23);
+        
+        let count = 0; let fy = 35;
+        doc.setFontSize(9);
+        for(let f in risultatiFacet) {
+            let fx = count < 13 ? 15 : 110;
+            let currentY = count < 13 ? fy : fy - (13 * 6);
+            doc.text(`${f}:`, fx, currentY);
+            doc.setFont(undefined, 'bold'); doc.text(risultatiFacet[f], fx + 65, currentY, { align: "right" });
+            doc.setFont(undefined, 'normal');
+            count++; fy += (count <= 13 ? 6 : 0);
+        }
+
+        // Bar Chart
+        try {
+            const canvasF = document.getElementById('facetChart');
+            const imgF = canvasF.toDataURL('image/png', 1.0);
+            doc.addImage(imgF, 'PNG', 15, 125, 180, 140);
+        } catch(e) {}
+
+        // Sezione 3: Specchietto Diagnostico
+        doc.addPage();
+        doc.setFontSize(14); doc.setTextColor(44, 62, 80); doc.text("3. Specchietto Diagnostico (Tratti per Disturbo)", 15, 20);
+        doc.line(15, 23, 195, 23);
+        
+        let dy = 35;
+        diagnosisMap.forEach(d => {
+            if (dy > 250) { doc.addPage(); dy = 20; }
+            doc.setFontSize(11); doc.setFont(undefined, 'bold'); doc.setTextColor(52, 152, 219);
+            doc.text(d.title, 15, dy); dy += 6;
+            doc.setFontSize(9); doc.setFont(undefined, 'normal'); doc.setTextColor(0, 0, 0);
+            d.facets.forEach(f => {
+                doc.text(`- ${f}`, 20, dy); doc.text(risultatiFacet[f], 100, dy, { align: "right" });
+                dy += 5;
+            });
+            dy += 5;
+        });
+
         doc.save(`PID5_Report_${id}.pdf`);
     }
+
     function generaPDFRisposte() {
-        alert("Funzione protocollo risposte in generazione...");
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const id = document.getElementById('pazienteId').value || "Anonimo";
+        const data = document.getElementById('dataOggi').value;
+
+        doc.setFontSize(16); doc.text("Protocollo Risposte Integrale PID-5", 15, 20);
+        doc.setFontSize(10); doc.text(`Paziente: ${id} | Data: ${data}`, 15, 28);
+        doc.line(15, 31, 195, 31);
+
+        let y = 40; doc.setFontSize(8);
+        risposteSalvate.forEach((item) => {
+            if (y > 280) { doc.addPage(); y = 20; }
+            let text = item.id + ". " + (item.testo.length > 95 ? item.testo.substring(0, 92) + "..." : item.testo);
+            doc.text(text, 15, y);
+            doc.setFont(undefined, 'bold'); doc.text("[" + item.risp + "]", 190, y, { align: "right" });
+            doc.setFont(undefined, 'normal');
+            y += 5.2;
+        });
+        doc.save(`PID5_Protocollo_${id}.pdf`);
     }
 </script>
 </body>
