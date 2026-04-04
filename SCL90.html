@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCL-90 | Centro di Psicoterapia Prisma</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        prisma: '#2c3e50',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        /* Nascondi scrollbar per pulizia UI ma mantieni lo scorrimento */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .option-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .option-btn.selected {
+            background-color: #2c3e50;
+            color: white;
+            border-color: #2c3e50;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 pb-20">
+
+    <header class="bg-prisma text-white p-6 shadow-md">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">Centro di psicoterapia - Prisma</h1>
+                <p class="text-sm opacity-80">Lecce</p>
+            </div>
+            <div class="text-right">
+                <h2 class="text-xl font-semibold">SCL-90</h2>
+                <p class="text-xs opacity-80">Symptom Checklist-90</p>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto mt-8 px-4" id="mainContainer">
+        
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
+            <h3 class="text-lg font-semibold mb-4 text-prisma border-b pb-2">Dati Paziente</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Codice/Nome Paziente</label>
+                    <input type="text" id="patientName" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-prisma outline-none" placeholder="Es. Mario Rossi o ID123">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Data Somministrazione</label>
+                    <input type="date" id="testDate" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-prisma outline-none">
+                </div>
+            </div>
+        </div>
+
+        <div class="sticky top-0 z-50 bg-white/95 backdrop-blur shadow-sm border-b border-slate-200 py-3 px-4 mb-6 rounded-lg flex justify-between items-center text-sm md:text-base">
+            <span class="font-bold text-prisma mr-4 hidden md:inline">Legenda:</span>
+            <div class="flex-1 flex justify-between font-medium text-slate-600">
+                <span>0 = Per niente</span>
+                <span>1 = Un poco</span>
+                <span>2 = Moderatamente</span>
+                <span>3 = Molto</span>
+                <span>4 = Moltissimo</span>
+            </div>
+        </div>
+
+        <div id="questionsContainer" class="space-y-6"></div>
+
+        <div id="errorAlert" class="hidden mt-8 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <strong class="font-bold">Attenzione!</strong>
+            <span class="block sm:inline"> Hai saltato alcune domande. Controlla i blocchi evidenziati in rosso.</span>
+        </div>
+
+        <div class="mt-10 flex justify-center">
+            <button onclick="calculateResults()" class="bg-prisma hover:bg-slate-700 text-white font-bold py-4 px-12 rounded-xl shadow-lg text-lg w-full md:w-auto transition-colors">
+                Concludi e Calcola
+            </button>
+        </div>
+
+    </main>
+
+    <div id="resultsDashboard" class="hidden max-w-5xl mx-auto mt-8 px-4 pb-20">
+        <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
+            <div class="flex justify-between items-end border-b-2 border-prisma pb-4 mb-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-prisma">Referto Clinico SCL-90</h2>
+                    <p id="resPatientInfo" class="text-slate-600 mt-1 text-lg"></p>
+                </div>
+                <div class="flex gap-4">
+                    <button onclick="exportClinicalReport()" class="bg-prisma text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        PDF Relazione
+                    </button>
+                    <button onclick="exportProtocol()" class="bg-white text-prisma border border-prisma px-4 py-2 rounded-lg hover:bg-slate-50 transition flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        PDF Protocollo
+                    </button>
+                </div>
+            </div>
+
+            <div class="mb-10">
+                <h3 class="text-xl font-bold text-prisma mb-4">Punteggi per Dimensioni Sintomatologiche</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-slate-200">
+                        <thead class="bg-slate-100 text-slate-700">
+                            <tr>
+                                <th class="py-3 px-4 border-b text-left">Dominio</th>
+                                <th class="py-3 px-4 border-b text-center w-32">Punteggio Medio</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scoresTableBody" class="text-slate-700">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center">
+                    <h4 class="font-bold text-prisma mb-2">Profilo Dimensionale (Radar)</h4>
+                    <div class="w-full max-w-md aspect-square">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center">
+                    <h4 class="font-bold text-prisma mb-2">Punteggi vs Media Paziente (Barre)</h4>
+                    <div class="w-full h-full min-h-[300px]">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-xl font-bold text-prisma mb-4">Item Critici (Punteggi 3 o 4)</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border border-slate-200">
+                        <thead class="bg-red-50 text-red-800">
+                            <tr>
+                                <th class="py-3 px-4 border-b text-left w-16">Item</th>
+                                <th class="py-3 px-4 border-b text-left">Sintomo</th>
+                                <th class="py-3 px-4 border-b text-center w-24">Valore</th>
+                            </tr>
+                        </thead>
+                        <tbody id="criticalItemsBody" class="text-slate-700">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center">
+                 <button onclick="location.reload()" class="text-slate-500 hover:text-prisma underline">Inizia un nuovo test</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set data odierna di default
+        document.getElementById('testDate').valueAsDate = new Date();
+
+        const items = [
+            "Mal di testa", "Nervosismo o agitazione interna", "Incapacità a scacciare pensieri, parole o idee indesiderate", 
+            "Sensazione di svenimento o di vertigini", "Perdita dell'interesse o del piacere sessuale", "Tendenza a criticare gli altri", 
+            "Convinzione che gli altri possano controllare i tuoi pensieri", "Convinzione che gli altri siano responsabili dei tuoi disturbi", 
+            "Difficoltà a ricordare le cose", "Preoccupazioni per la tua negligenza o trascuratezza", "Sentirti facilmente infastidito o irritato", 
+            "Dolori al cuore o al petto", "Paura degli spazi aperti o delle strade", "Sentirti debole o fiacco", "Idee di toglierti la vita", 
+            "Udire voci che le altre persone non odono", "Tremori", "Mancanza di fiducia negli altri", "Scarso appetito", "Facili crisi di pianto", 
+            "Sentirti intimidito nei confronti dell'altro sesso", "Sensazione di essere preso in trappola", "Paure improvvise senza ragione", 
+            "Scatti d'ira incontrollabili", "Paura di uscire da solo", "Rimproverarti qualsiasi cosa", "Dolori alla schiena", 
+            "Senso d'incapacità a portare a termine le cose", "Sentirti solo", "Sentirti giù di morale", "Preoccuparsi eccessivamente per qualsiasi cosa", 
+            "Mancanza d'interesse", "Senso di paura", "Sentirti facilmente ferito od offeso", "Convinzione che gli altri percepiscano i tuoi pensieri", 
+            "Sensazione di non trovare comprensione o simpatia", "Sensazione che gli altri non ti siano amici o ti abbiano in antipatia", 
+            "Dover fare le cose molto lentamente per essere sicuro di farle bene", "Palpitazioni o sentirti il cuore in gola", 
+            "Senso di nausea o mal di stomaco", "Sentimenti d'inferiorità", "Dolori muscolari", "Sensazione che gli altri ti guardino o parlino di te", 
+            "Difficoltà ad addormentarti", "Bisogno di controllare ripetutamente ciò che fai", "Difficoltà a prendere decisioni", 
+            "Paura di viaggiare in autobus, nella metropolitana o in treno", "Sentirti senza fiato", "Vampate di calore o brividi di freddo", 
+            "Necessità di evitare certi oggetti, luoghi o attività perché ti spaventano", "Senso di vuoto mentale", 
+            "Intorpidimento o formicolio di alcune parti del corpo", "Nodo alla gola", "Guardare al futuro senza speranza", 
+            "Difficoltà a concentrarti", "Senso di debolezza in qualche parte del corpo", "Sentirti teso o sulle spine", 
+            "Senso di pesantezza alle braccia o alle gambe", "Idee di morte", "Mangiare troppo", "Senso di fastidio quando la gente ti guarda o parla di te", 
+            "Avere dei pensieri che non sono tuoi", "Sentire l'impulso di colpire, ferire o fare male a qualcuno", 
+            "Svegliarti presto al mattino senza riuscire a riaddormentarti", "Avere bisogno di ripetere lo stesso atto come toccare, contare, lavarti le mani, etc.", 
+            "Sonno inquieto o disturbato", "Sentire l'impulso di rompere gli oggetti", "Avere idee o convinzioni che gli altri non condividono", 
+            "Sentirti penosamente imbarazzato in presenza di altri", "Sentirti a disagio tra la folla, come nei negozi, al cinema etc.", 
+            "Sensazione che tutto richieda uno sforzo", "Momenti di terrore o di panico", "Sentirti a disagio quando mangi o bevi in presenza di altri", 
+            "Ingaggiare frequenti discussioni", "Sentirti a disagio quando sei solo", "Convinzione che gli altri non apprezzino il tuo lavoro", 
+            "Sentirti solo e triste anche in compagnia", "Senso di irrequietezza, tanto da non poter stare seduto", "Sentimenti di inutilità", 
+            "Sensazione che le cose più comuni e familiari siano estranee o irreali", "Urlare e scagliare gli oggetti", 
+            "Avere paura di svenire davanti agli altri", "Impressione che gli altri possano approfittare di te o delle tue azioni", 
+            "Pensieri sul sesso che ti affliggono", "Idea di dover scontare i propri peccati", "Sentirti costretto a portare a termine ciò che hai iniziato", 
+            "Pensiero di avere una grave malattia fisica", "Non sentirti mai vicino alle altre persone", "Sentirti in colpa", 
+            "Idea che qualcosa non vada bene nella tua mente"
+        ];
+
+        const domains = {
+            "Somatizzazione (SOM)": [1, 4, 12, 27, 40, 42, 48, 49, 52, 53, 56, 58],
+            "Ossessività-Compulsività (O-C)": [3, 9, 10, 28, 38, 45, 46, 51, 55, 65],
+            "Ipersensibilità Interpersonale (INT)": [6, 21, 34, 36, 37, 41, 61, 69, 73],
+            "Depressione (DEP)": [5, 14, 15, 20, 22, 26, 29, 30, 31, 32, 54, 71, 79],
+            "Ansia (ANX)": [2, 17, 23, 33, 39, 57, 72, 78, 80, 86],
+            "Ostilità (HOS)": [11, 24, 63, 67, 74, 81],
+            "Ansia Fobica (PHOB)": [13, 25, 47, 50, 70, 75, 82],
+            "Ideazione Paranoide (PAR)": [8, 18, 43, 68, 76, 83],
+            "Psicoticismo (PSY)": [7, 16, 35, 62, 77, 84, 85, 87, 88, 90]
+        };
+
+        const responses = new Array(90).fill(null);
+        let radarChartInstance = null;
+        let barChartInstance = null;
+        let finalScores = {};
+        let gsiScore = 0;
+
+        // Render UI
+        const container = document.getElementById('questionsContainer');
+        items.forEach((text, index) => {
+            const qNum = index + 1;
+            const card = document.createElement('div');
+            card.className = "bg-white p-5 md:p-8 rounded-xl shadow-sm border border-slate-200 transition-colors duration-300";
+            card.id = `qCard-${qNum}`;
+            
+            let optionsHtml = '';
+            for(let i=0; i<=4; i++) {
+                optionsHtml += `<button onclick="selectOption(${index}, ${i})" id="btn-${index}-${i}" class="option-btn w-full py-4 border border-slate-300 rounded-lg text-lg font-medium text-slate-700 hover:bg-slate-100 flex items-center justify-center">${i}</button>`;
+            }
+
+            card.innerHTML = `
+                <p class="text-lg md:text-xl font-medium text-slate-800 mb-6"><span class="text-prisma font-bold mr-2">${qNum}.</span> ${text}</p>
+                <div class="grid grid-cols-5 gap-2 md:gap-4">
+                    ${optionsHtml}
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        function selectOption(qIndex, val) {
+            responses[qIndex] = val;
+            
+            // Rimuovi classe selected dai fratelli
+            for(let i=0; i<=4; i++) {
+                document.getElementById(`btn-${qIndex}-${i}`).classList.remove('selected');
+            }
+            // Aggiungi a quello cliccato
+            document.getElementById(`btn-${qIndex}-${val}`).classList.add('selected');
+            
+            // Rimuovi eventuale highlight di errore
+            document.getElementById(`qCard-${qIndex+1}`).classList.remove('border-red-500', 'bg-red-50');
+        }
+
+        function calculateResults() {
+            // Validazione
+            let firstMissed = -1;
+            responses.forEach((res, index) => {
+                const card = document.getElementById(`qCard-${index+1}`);
+                if (res === null) {
+                    if (firstMissed === -1) firstMissed = index + 1;
+                    card.classList.add('border-red-500', 'bg-red-50');
+                } else {
+                    card.classList.remove('border-red-500', 'bg-red-50');
+                }
+            });
+
+            if (firstMissed !== -1) {
+                document.getElementById('errorAlert').classList.remove('hidden');
+                document.getElementById(`qCard-${firstMissed}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
+            document.getElementById('errorAlert').classList.add('hidden');
+
+            // Calcolo Score
+            let totalSum = 0;
+            responses.forEach(val => totalSum += val);
+            gsiScore = totalSum / 90;
+
+            finalScores = {};
+            for (const [domain, qList] of Object.entries(domains)) {
+                let sum = 0;
+                qList.forEach(qNum => {
+                    sum += responses[qNum - 1];
+                });
+                finalScores[domain] = sum / qList.length;
+            }
+
+            renderDashboard();
+        }
+
+        function renderDashboard() {
+            document.getElementById('mainContainer').classList.add('hidden');
+            const dash = document.getElementById('resultsDashboard');
+            dash.classList.remove('hidden');
+            window.scrollTo(0,0);
+
+            const pName = document.getElementById('patientName').value || "Anonimo";
+            const pDate = document.getElementById('testDate').value;
+            document.getElementById('resPatientInfo').innerText = `Paziente: ${pName} | Data: ${pDate}`;
+
+            // Tabella
+            const tbody = document.getElementById('scoresTableBody');
+            tbody.innerHTML = '';
+            for (const [domain, score] of Object.entries(finalScores)) {
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="py-2 px-4 border-b font-medium">${domain}</td>
+                        <td class="py-2 px-4 border-b text-center font-bold">${score.toFixed(2)}</td>
+                    </tr>`;
+            }
+            tbody.innerHTML += `
+                <tr class="bg-prisma/10">
+                    <td class="py-3 px-4 border-b font-bold text-prisma">Global Severity Index (GSI)</td>
+                    <td class="py-3 px-4 border-b text-center font-bold text-prisma">${gsiScore.toFixed(2)}</td>
+                </tr>`;
+
+            // Item Critici
+            const critBody = document.getElementById('criticalItemsBody');
+            critBody.innerHTML = '';
+            let hasCritical = false;
+            responses.forEach((val, index) => {
+                if (val >= 3) {
+                    hasCritical = true;
+                    critBody.innerHTML += `
+                        <tr>
+                            <td class="py-2 px-4 border-b font-bold text-center">${index + 1}</td>
+                            <td class="py-2 px-4 border-b">${items[index]}</td>
+                            <td class="py-2 px-4 border-b text-center font-bold text-red-600">${val}</td>
+                        </tr>`;
+                }
+            });
+            if(!hasCritical) {
+                critBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-500">Nessun item critico rilevato (nessun punteggio ≥ 3).</td></tr>`;
+            }
+
+            // Grafici
+            const labels = Object.keys(finalScores).map(d => d.split(' ')[1].replace(/[()]/g, '')); // Solo sigle
+            const dataScores = Object.values(finalScores);
+
+            if (radarChartInstance) radarChartInstance.destroy();
+            const ctxRadar = document.getElementById('radarChart').getContext('2d');
+            radarChartInstance = new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Punteggio Medio',
+                        data: dataScores,
+                        backgroundColor: 'rgba(44, 62, 80, 0.2)',
+                        borderColor: 'rgba(44, 62, 80, 1)',
+                        pointBackgroundColor: '#2c3e50',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    animation: false,
+                    scales: { r: { min: 0, max: 4, ticks: { stepSize: 1 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            if (barChartInstance) barChartInstance.destroy();
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            barChartInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'Media Paziente (GSI)',
+                            data: Array(labels.length).fill(gsiScore),
+                            borderColor: 'red',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Punteggi',
+                            data: dataScores,
+                            backgroundColor: '#2c3e50'
+                        }
+                    ]
+                },
+                options: {
+                    animation: false,
+                    scales: { y: { min: 0, max: 4 } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // ESORTAZIONE PDF
+        window.jsPDF = window.jspdf.jsPDF;
+
+        function exportClinicalReport() {
+            const doc = new jsPDF();
+            const pName = document.getElementById('patientName').value || "Anonimo";
+            const pDate = document.getElementById('testDate').value;
+            
+            // Intestazione
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Centro di psicoterapia - Prisma (Lecce)", 14, 20);
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text(`Relazione Clinica SCL-90 - Paziente: ${pName} - Data: ${pDate}`, 14, 28);
+            doc.line(14, 32, 196, 32);
+
+            // Tabella Score
+            const tableData = Object.entries(finalScores).map(([dom, score]) => [dom, score.toFixed(2)]);
+            tableData.push(['Global Severity Index (GSI)', gsiScore.toFixed(2)]);
+
+            doc.autoTable({
+                startY: 38,
+                head: [['Dominio Sintomatologico', 'Punteggio Medio']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [44, 62, 80] },
+                margin: { top: 10 }
+            });
+
+            // Grafici (cattura nativa Canvas a Base64)
+            let currentY = doc.lastAutoTable.finalY + 10;
+            
+            const radarImg = document.getElementById('radarChart').toDataURL('image/png', 1.0);
+            const barImg = document.getElementById('barChart').toDataURL('image/png', 1.0);
+            
+            // Controllo spazio per i grafici
+            if (currentY > 150) {
+                doc.addPage();
+                currentY = 20;
+            }
+
+            doc.setFontSize(12);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Profilo Dimensionale", 14, currentY);
+            doc.addImage(radarImg, 'PNG', 14, currentY + 5, 80, 80);
+            
+            doc.text("Punteggi vs Media", 105, currentY);
+            doc.addImage(barImg, 'PNG', 105, currentY + 15, 90, 45);
+
+            // Item Critici
+            currentY += 95;
+            const criticalData = [];
+            responses.forEach((val, i) => {
+                if(val >= 3) criticalData.push([i+1, items[i], val]);
+            });
+
+            if(criticalData.length > 0) {
+                doc.autoTable({
+                    startY: currentY,
+                    head: [['N°', 'Item Critico (Punteggio >= 3)', 'Valore']],
+                    body: criticalData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [220, 38, 38] }, // Rosso per critici
+                    styles: { cellWidth: 'wrap' },
+                    columnStyles: { 0: {cellWidth: 15}, 2: {cellWidth: 20} }
+                });
+            } else {
+                doc.setFontSize(10);
+                doc.text("Nessun item critico rilevato.", 14, currentY + 10);
+            }
+
+            doc.save(`SCL90_Relazione_${pName.replace(/\s+/g, '_')}.pdf`);
+        }
+
+        function exportProtocol() {
+            const doc = new jsPDF();
+            const pName = document.getElementById('patientName').value || "Anonimo";
+            const pDate = document.getElementById('testDate').value;
+            
+            // Intestazione
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Centro di psicoterapia - Prisma (Lecce)", 14, 20);
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text(`Protocollo Risposte SCL-90 - Paziente: ${pName} - Data: ${pDate}`, 14, 28);
+            
+            const protocolData = responses.map((val, index) => [
+                index + 1,
+                items[index],
+                val !== null ? val : 'Non risposto'
+            ]);
+
+            doc.autoTable({
+                startY: 35,
+                head: [['N°', 'Testo Domanda', 'Risposta']],
+                body: protocolData,
+                theme: 'striped',
+                headStyles: { fillColor: [44, 62, 80] },
+                columnStyles: { 0: {cellWidth: 15}, 2: {cellWidth: 25, fontStyle: 'bold', halign: 'center'} }
+            });
+
+            doc.save(`SCL90_Protocollo_${pName.replace(/\s+/g, '_')}.pdf`);
+        }
+    </script>
+</body>
+</html>
