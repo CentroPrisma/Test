@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCL-90 | Centro di Psicoterapia Prisma</title>
+    <title>SCL-90-R | Centro di Psicoterapia Prisma</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,8 +19,8 @@
                 extend: {
                     colors: {
                         prisma: '#2c3e50',
-                        normal: '#86efac', // Verde per range normativo
-                        clinical: '#ef4444' // Rosso per range clinico
+                        normal: '#4ade80', // Verde più brillante per normalità
+                        clinical: '#ef4444' // Rosso clinico
                     }
                 }
             }
@@ -39,6 +39,7 @@
             color: white;
             border-color: #2c3e50;
         }
+        .required-field { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 pb-20">
@@ -47,12 +48,12 @@
     <header class="bg-prisma text-white p-6 shadow-md">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div>
-                <h1 class="text-2xl font-bold">Centro di psicoterapia Lecce - Prisma</h1>
-                <p class="text-sm opacity-80">USO ESCLUSIVO NON CONDIVISIBILE</p>
+                <h1 class="text-2xl font-bold">Centro di psicoterapia - Prisma</h1>
+                <p class="text-sm opacity-80">Lecce</p>
             </div>
             <div class="text-right">
-                <h2 class="text-xl font-semibold">SCL-90</h2>
-                <p class="text-xs opacity-80">Symptom Checklist-90</p>
+                <h2 class="text-xl font-semibold">SCL-90-R</h2>
+                <p class="text-xs opacity-80">Symptom Checklist-90 Revised</p>
             </div>
         </div>
     </header>
@@ -61,16 +62,28 @@
         
         <!-- DATI PAZIENTE -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
-            <h3 class="text-lg font-semibold mb-4 text-prisma border-b pb-2">Dati Paziente</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+            <h3 class="text-lg font-semibold text-prisma border-b pb-2 mb-4">Dati Paziente</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-slate-600 mb-1">Codice/Nome Paziente</label>
                     <input type="text" id="patientName" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-prisma outline-none" placeholder="Es. Mario Rossi o ID123">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-slate-600 mb-1">Data Somministrazione</label>
-                    <input type="date" id="testDate" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-prisma outline-none">
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Età *</label>
+                    <input type="number" id="patientAge" min="1" max="99" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-prisma outline-none" placeholder="Anni">
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1">Sesso *</label>
+                    <select id="patientSex" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-prisma outline-none bg-white">
+                        <option value="">Seleziona...</option>
+                        <option value="M">Maschio</option>
+                        <option value="F">Femmina</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-slate-600 mb-1">Data Somministrazione</label>
+                <input type="date" id="testDate" class="w-full md:w-1/3 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-prisma outline-none">
             </div>
         </div>
 
@@ -91,8 +104,8 @@
 
         <!-- ERRORE E PULSANTE -->
         <div id="errorAlert" class="hidden mt-8 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-            <strong class="font-bold">Attenzione!</strong>
-            <span class="block sm:inline"> Hai saltato alcune domande. Controlla i blocchi evidenziati in rosso.</span>
+            <strong class="font-bold" id="errorTitle">Attenzione!</strong>
+            <span class="block sm:inline" id="errorMessage"> Hai saltato alcune domande. Controlla i blocchi evidenziati in rosso.</span>
         </div>
 
         <div class="mt-10 flex justify-center">
@@ -103,37 +116,59 @@
 
     </main>
 
-    <!-- DASHBOARD RISULTATI (Nascosta all'avvio) -->
+    <!-- DASHBOARD RISULTATI -->
     <div id="resultsDashboard" class="hidden max-w-6xl mx-auto mt-8 px-4 pb-20">
         <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
             <div class="flex justify-between items-end border-b-2 border-prisma pb-4 mb-8 flex-wrap gap-4">
                 <div>
-                    <h2 class="text-3xl font-bold text-prisma">Referto Clinico SCL-90</h2>
-                    <p id="resPatientInfo" class="text-slate-600 mt-1 text-lg"></p>
+                    <h2 class="text-3xl font-bold text-prisma">Referto Clinico SCL-90-R</h2>
+                    <p id="resPatientInfo" class="text-slate-600 mt-1 text-lg font-medium"></p>
+                    <p id="resNormInfo" class="text-sm text-slate-500 mt-1 italic"></p>
                 </div>
                 <div class="flex gap-4 flex-wrap">
-                    <button onclick="exportClinicalReport()" class="bg-prisma text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition flex items-center gap-2">
+                    <button onclick="exportClinicalReport()" class="bg-prisma text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition flex items-center gap-2 shadow-sm">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         PDF Relazione
                     </button>
-                    <button onclick="exportProtocol()" class="bg-white text-prisma border border-prisma px-4 py-2 rounded-lg hover:bg-slate-50 transition flex items-center gap-2">
+                    <button onclick="exportProtocol()" class="bg-white text-prisma border border-prisma px-4 py-2 rounded-lg hover:bg-slate-50 transition flex items-center gap-2 shadow-sm">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         PDF Risposte
                     </button>
                 </div>
             </div>
 
-            <!-- TABELLA PUNTEGGI (LARGHEZZA INTERA) -->
+            <!-- GRAFICO PUNTI T -->
             <div class="mb-10 w-full">
-                <h3 class="text-xl font-bold text-prisma mb-4">Profilo Paziente vs Popolazioni Normative (Holi, 2003)</h3>
+                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                    <h4 class="font-bold text-prisma mb-4 text-center text-xl">Profilo Dimensionale (Punti T)</h4>
+                    
+                    <!-- LEGENDA INTERPRETATIVA -->
+                    <div class="mb-6 border border-slate-200 bg-white p-4 rounded-lg shadow-sm text-sm text-slate-700">
+                        <h5 class="font-bold text-prisma mb-2 border-b pb-1">Legenda Interpretativa</h5>
+                        <ul class="space-y-2">
+                            <li><span class="inline-block w-4 h-4 bg-prisma align-middle mr-1 rounded-sm"></span> / <span class="inline-block w-4 h-4 bg-red-500 align-middle mr-1 rounded-sm"></span> Le barre si colorano in automatico di <strong class="text-red-600">Rosso</strong> se il punteggio raggiunge o supera la soglia clinica (T ≥ 65).</li>
+                            <li><span class="inline-block w-4 h-4 bg-green-200 border border-green-500 align-middle mr-1"></span> La <strong>fascia verde</strong> indica il range di Normalità (T 45 - 55).</li>
+                            <li><span class="text-green-600 font-bold mr-1">—</span> La <strong>linea verde continua</strong> rappresenta la Media del campione normativo (T = 50).</li>
+                            <li><span class="text-red-500 font-bold mr-1">- - -</span> La <strong>linea rossa tratteggiata</strong> indica la <strong class="text-red-600">Soglia di Attenzione Clinica</strong> (T = 65).</li>
+                        </ul>
+                    </div>
+
+                    <div class="w-full h-[400px] bg-white p-4 rounded shadow-sm border border-slate-100">
+                        <canvas id="tScoreChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABELLA PUNTEGGI T -->
+            <div class="mb-10 w-full">
+                <h3 class="text-xl font-bold text-prisma mb-4">Scoring Clinico e Indici Globali</h3>
                 <div class="overflow-x-auto shadow-sm rounded-lg border border-slate-200">
                     <table class="min-w-full bg-white text-sm md:text-base">
                         <thead class="bg-prisma text-white">
                             <tr>
-                                <th class="py-3 px-4 text-left font-semibold">Scala</th>
-                                <th class="py-3 px-4 text-center font-bold bg-slate-800">Pz. Grezzo</th>
-                                <th class="py-3 px-4 text-center font-semibold">Pop. Generale (Media ± DS)</th>
-                                <th class="py-3 px-4 text-center font-semibold">Pazienti Psichiatrici (Media ± DS)</th>
+                                <th class="py-3 px-4 text-left font-semibold">Scala / Indice</th>
+                                <th class="py-3 px-4 text-center font-semibold">Punteggio Grezzo</th>
+                                <th class="py-3 px-4 text-center font-bold bg-slate-800 text-lg w-40">Punti T</th>
                             </tr>
                         </thead>
                         <tbody id="scoresTableBody" class="text-slate-700 divide-y divide-slate-200">
@@ -143,23 +178,9 @@
                 </div>
             </div>
 
-            <!-- GRAFICO SINGOLO CON DS GRAFICA -->
-            <div class="mb-10 w-full">
-                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
-                    <h4 class="font-bold text-prisma mb-4 text-center text-xl">Profilo Dimensionale: Punteggi vs Range Normativi</h4>
-                    <p class="text-sm text-center text-slate-500 mb-4">
-                        La <span class="inline-block w-4 h-4 bg-green-200 border border-green-400 align-middle"></span> fascia verde indica il range di normalità della Popolazione Generale (Media ± 1 Deviazione Standard).<br>
-                        La <span class="text-red-500 font-bold">---</span> linea tratteggiata rossa indica la Media dei Pazienti Psichiatrici.
-                    </p>
-                    <div class="w-full h-[400px] bg-white p-4 rounded shadow-sm border border-slate-100">
-                        <canvas id="barChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
             <!-- ITEM CRITICI RAGGRUPPATI -->
             <div>
-                <h3 class="text-xl font-bold text-prisma mb-4">Item Critici (Punteggi 3 o 4)</h3>
+                <h3 class="text-xl font-bold text-prisma mb-4">Item Critici Rilevati (Punteggi 3 o 4)</h3>
                 <div class="overflow-x-auto shadow-sm rounded-lg border border-slate-200">
                     <table class="min-w-full bg-white">
                         <thead class="bg-red-50 text-red-800 border-b border-red-200">
@@ -177,7 +198,7 @@
             </div>
             
             <div class="mt-8 text-center">
-                 <button onclick="location.reload()" class="text-slate-500 hover:text-prisma underline">Inizia un nuovo test</button>
+                 <button onclick="location.reload()" class="text-slate-500 hover:text-prisma underline font-medium">Inizia un nuovo test</button>
             </div>
         </div>
     </div>
@@ -219,11 +240,11 @@
             "Idea che qualcosa non vada bene nella tua mente"
         ];
 
-        // Definizione domini (Sigle estrapolate per i grafici)
+        // Definizione domini (Sigle allineate al manuale Giunti O.S.)
         const domains = {
             "Somatizzazione (SOM)": { items: [1, 4, 12, 27, 40, 42, 48, 49, 52, 53, 56, 58], sigla: "SOM" },
             "Ossessività-Compulsività (O-C)": { items: [3, 9, 10, 28, 38, 45, 46, 51, 55, 65], sigla: "O-C" },
-            "Ipersensibilità Interpersonale (INT)": { items: [6, 21, 34, 36, 37, 41, 61, 69, 73], sigla: "INT" },
+            "Ipersensibilità Interpersonale (I-S)": { items: [6, 21, 34, 36, 37, 41, 61, 69, 73], sigla: "I-S" },
             "Depressione (DEP)": { items: [5, 14, 15, 20, 22, 26, 29, 30, 31, 32, 54, 71, 79], sigla: "DEP" },
             "Ansia (ANX)": { items: [2, 17, 23, 33, 39, 57, 72, 78, 80, 86], sigla: "ANX" },
             "Ostilità (HOS)": { items: [11, 24, 63, 67, 74, 81], sigla: "HOS" },
@@ -232,26 +253,45 @@
             "Psicoticismo (PSY)": { items: [7, 16, 35, 62, 77, 84, 85, 87, 88, 90], sigla: "PSY" }
         };
 
-        // Dati Normativi (Holi, 2003)
-        const normativeData = {
-            "SOM": { genMean: 0.67, genSd: 0.55, psyMean: 1.39, psySd: 0.77 },
-            "O-C": { genMean: 0.82, genSd: 0.57, psyMean: 1.91, psySd: 0.85 },
-            "INT": { genMean: 0.74, genSd: 0.55, psyMean: 1.60, psySd: 0.84 },
-            "DEP": { genMean: 0.73, genSd: 0.55, psyMean: 2.17, psySd: 0.87 },
-            "ANX": { genMean: 0.53, genSd: 0.49, psyMean: 1.59, psySd: 0.80 },
-            "HOS": { genMean: 0.58, genSd: 0.53, psyMean: 1.13, psySd: 0.72 },
-            "PHOB": { genMean: 0.24, genSd: 0.39, psyMean: 1.05, psySd: 0.85 },
-            "PAR": { genMean: 0.53, genSd: 0.58, psyMean: 1.18, psySd: 0.82 },
-            "PSY": { genMean: 0.31, genSd: 0.40, psyMean: 0.94, psySd: 0.65 },
-            "GSI": { genMean: 0.60, genSd: 0.44, psyMean: 1.56, psySd: 0.61 }
+        // PUNTI DI ANCORAGGIO ESATTI ESTRATTI DALLE TABELLE C-1, C-2, C-3, C-4 (Manuale Giunti O.S., Adulti)
+        // La struttura mappa i punteggi Grezzi ai Punti T: [Grezzo, Punto T]
+        const exactNorms = {
+            "M": {
+                "SOM": [[0, 38], [0.08, 40], [0.50, 50], [0.92, 60], [1.33, 70], [1.50, 74]],
+                "O-C": [[0, 38], [0.10, 40], [0.44, 50], [1.20, 61], [1.70, 70], [1.90, 74]],
+                "I-S": [[0, 40], [0.11, 42], [0.44, 50], [0.89, 61], [1.22, 68], [1.44, 74]],
+                "DEP": [[0, 39], [0.08, 40], [0.46, 50], [0.92, 61], [1.31, 70], [1.46, 74]],
+                "ANX": [[0, 40], [0.20, 46], [0.50, 50], [1.10, 70], [1.30, 75]],
+                "HOS": [[0, 40], [0.17, 43], [0.67, 50], [1.17, 63], [1.67, 72]],
+                "PHOB": [[0, 45], [0.14, 51], [0.57, 67], [1.83, 71], [2.00, 73]],
+                "PAR": [[0, 39], [0.17, 41], [0.67, 50], [1.00, 65], [1.67, 68]],
+                "PSY": [[0, 42], [0.10, 46], [0.30, 52], [0.60, 61], [1.00, 74]],
+                "GSI": [[0, 37], [0.13, 40], [0.43, 50], [0.80, 60], [1.12, 70], [1.29, 75]],
+                "PST": [[0, 34], [11, 40], [27, 50], [45, 60], [58, 70], [66, 74]],
+                "PSDI": [[0, 36], [1.00, 40], [1.33, 50], [1.76, 60], [2.23, 70], [2.41, 75]]
+            },
+            "F": {
+                "SOM": [[0, 38], [0.17, 40], [0.75, 50], [1.33, 59], [2.00, 70], [2.25, 74]],
+                "O-C": [[0, 38], [0.10, 40], [0.80, 51], [1.30, 59], [1.90, 69], [2.20, 74]],
+                "I-S": [[0, 40], [0.11, 42], [0.56, 50], [1.11, 60], [1.67, 70], [1.89, 74]],
+                "DEP": [[0, 39], [0.08, 40], [0.69, 50], [1.31, 60], [1.85, 69], [2.00, 72]],
+                "ANX": [[0, 40], [0.30, 46], [0.60, 51], [1.10, 60], [1.70, 71], [1.90, 75]],
+                "HOS": [[0, 40], [0.17, 43], [0.50, 49], [1.17, 61], [1.67, 70], [1.83, 73]],
+                "PHOB": [[0, 44], [0.14, 48], [0.57, 59], [1.00, 70], [1.14, 75]],
+                "PAR": [[0, 38], [0.17, 41], [0.67, 49], [1.33, 60], [2.00, 71], [2.17, 74]],
+                "PSY": [[0, 43], [0.10, 46], [0.30, 51], [0.60, 58], [1.10, 71], [1.20, 73]],
+                "GSI": [[0, 37], [0.13, 40], [0.59, 50], [1.03, 60], [1.49, 70], [1.70, 75]],
+                "PST": [[0, 33], [13, 40], [31, 50], [49, 60], [66, 70], [75, 75]],
+                "PSDI": [[0, 34], [1.00, 38], [1.55, 50], [2.00, 60], [2.45, 70], [2.71, 75]]
+            }
         };
 
         const responses = new Array(90).fill(null);
-        let barChartInstance = null;
-        let finalScores = {};
-        let gsiScore = 0;
+        let tScoreChartInstance = null;
+        let finalScores = {}; 
+        let globalIndices = {};
 
-        // Render UI
+        // Render UI Questions
         const container = document.getElementById('questionsContainer');
         items.forEach((text, index) => {
             const qNum = index + 1;
@@ -273,6 +313,10 @@
             container.appendChild(card);
         });
 
+        // Rimuove gli allarmi quando modificato
+        document.getElementById('patientAge').addEventListener('input', function() { this.classList.remove('required-field'); });
+        document.getElementById('patientSex').addEventListener('change', function() { this.classList.remove('required-field'); });
+
         function selectOption(qIndex, val) {
             responses[qIndex] = val;
             for(let i=0; i<=4; i++) document.getElementById(`btn-${qIndex}-${i}`).classList.remove('selected');
@@ -280,7 +324,46 @@
             document.getElementById(`qCard-${qIndex+1}`).classList.remove('border-red-500', 'bg-red-50');
         }
 
+        // Funzione di calcolo esatto Punti T via Interpolazione dalle tabelle
+        function getExactTScore(raw, domain, sex) {
+            const points = exactNorms[sex][domain];
+            
+            if (raw <= points[0][0]) return points[0][1];
+            if (raw >= points[points.length - 1][0]) {
+                const p1 = points[points.length - 2];
+                const p2 = points[points.length - 1];
+                const slope = (p2[1] - p1[1]) / (p2[0] - p1[0]);
+                return Math.round(p2[1] + slope * (raw - p2[0]));
+            }
+            
+            for (let i = 0; i < points.length - 1; i++) {
+                if (raw >= points[i][0] && raw <= points[i+1][0]) {
+                    const p1 = points[i];
+                    const p2 = points[i+1];
+                    if (p1[0] === p2[0]) return p1[1];
+                    const slope = (p2[1] - p1[1]) / (p2[0] - p1[0]);
+                    return Math.round(p1[1] + slope * (raw - p1[0]));
+                }
+            }
+            return 50; // Fallback
+        }
+
         function calculateResults() {
+            // Validazione Dati
+            const age = parseInt(document.getElementById('patientAge').value);
+            const sex = document.getElementById('patientSex').value;
+            let hasDemographicError = false;
+
+            if(isNaN(age)) {
+                document.getElementById('patientAge').classList.add('required-field');
+                hasDemographicError = true;
+            }
+            if(sex === "") {
+                document.getElementById('patientSex').classList.add('required-field');
+                hasDemographicError = true;
+            }
+
+            // Validazione Risposte
             let firstMissed = -1;
             responses.forEach((res, index) => {
                 const card = document.getElementById(`qCard-${index+1}`);
@@ -292,33 +375,61 @@
                 }
             });
 
-            if (firstMissed !== -1) {
-                document.getElementById('errorAlert').classList.remove('hidden');
-                document.getElementById(`qCard-${firstMissed}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const alertBox = document.getElementById('errorAlert');
+            
+            if (hasDemographicError || firstMissed !== -1) {
+                alertBox.classList.remove('hidden');
+                
+                if(hasDemographicError) {
+                    document.getElementById('errorTitle').innerText = "Dati Mancanti!";
+                    document.getElementById('errorMessage').innerText = " Età e Sesso sono obbligatori per il referto.";
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    document.getElementById('errorTitle').innerText = "Attenzione!";
+                    document.getElementById('errorMessage').innerText = " Hai saltato alcune domande. Controlla i blocchi evidenziati in rosso.";
+                    document.getElementById(`qCard-${firstMissed}`).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
                 return;
             }
 
-            document.getElementById('errorAlert').classList.add('hidden');
+            alertBox.classList.add('hidden');
 
-            // Calcolo
+            // Calcolo Indici Globali
             let totalSum = 0;
-            responses.forEach(val => totalSum += val);
-            gsiScore = totalSum / 90;
+            let pstCount = 0;
+            responses.forEach(val => {
+                totalSum += val;
+                if (val > 0) pstCount++;
+            });
+            
+            const gsiRaw = totalSum / 90;
+            const psdiRaw = pstCount > 0 ? (totalSum / pstCount) : 0;
 
+            globalIndices = {
+                GSI: { name: "Global Severity Index (GSI)", grezzo: gsiRaw, tScore: getExactTScore(gsiRaw, "GSI", sex) },
+                PST: { name: "Positive Symptom Total (PST)", grezzo: pstCount, tScore: getExactTScore(pstCount, "PST", sex) },
+                PSDI: { name: "Positive Symptom Distress Index (PSDI)", grezzo: psdiRaw, tScore: getExactTScore(psdiRaw, "PSDI", sex) }
+            };
+
+            // Calcolo Domini
             finalScores = {};
             for (const [domainName, domainData] of Object.entries(domains)) {
                 let sum = 0;
                 domainData.items.forEach(qNum => sum += responses[qNum - 1]);
+                let rawScore = sum / domainData.items.length;
+                let tScore = getExactTScore(rawScore, domainData.sigla, sex);
+                
                 finalScores[domainData.sigla] = {
                     name: domainName,
-                    score: sum / domainData.items.length
+                    grezzo: rawScore,
+                    tScore: tScore
                 };
             }
 
-            renderDashboard();
+            renderDashboard(sex, age);
         }
 
-        function renderDashboard() {
+        function renderDashboard(sex, age) {
             document.getElementById('mainContainer').classList.add('hidden');
             const dash = document.getElementById('resultsDashboard');
             dash.classList.remove('hidden');
@@ -327,40 +438,44 @@
             const pName = document.getElementById('patientName').value || "Anonimo";
             const pDate = document.getElementById('testDate').value;
             const formattedDate = new Date(pDate).toLocaleDateString('it-IT');
-            document.getElementById('resPatientInfo').innerText = `Paziente: ${pName} | Data: ${formattedDate}`;
+            const sessoEsteso = sex === 'M' ? 'Maschio' : 'Femmina';
+            
+            document.getElementById('resPatientInfo').innerText = `Paziente: ${pName} | Sesso: ${sessoEsteso} | Età: ${age} | Data: ${formattedDate}`;
+            document.getElementById('resNormInfo').innerText = `Scoring esatto basato su Tabelle Giunti O.S.`;
 
-            // 1. COMPILAZIONE TABELLA NORMATIVA
+            // 1. COMPILAZIONE TABELLA SCORING
             const tbody = document.getElementById('scoresTableBody');
             tbody.innerHTML = '';
             
-            // Funzione per formattare la deviazione standard
-            const fmtNorm = (mean, sd) => `${mean.toFixed(2)} ± ${sd.toFixed(2)}`;
-            
             for (const [sigla, data] of Object.entries(finalScores)) {
-                const norm = normativeData[sigla];
-                
-                // Alert visivo per punteggi alti nella tabella
-                const isHigh = data.score > (norm.genMean + norm.genSd);
-                const scoreClass = isHigh ? "text-red-600 font-bold bg-red-50" : "font-bold bg-slate-50";
+                const isClinical = data.tScore >= 65;
+                const tScoreClass = isClinical ? "text-red-600 font-bold" : "font-bold text-slate-800";
 
                 tbody.innerHTML += `
                     <tr class="hover:bg-slate-50 transition-colors">
                         <td class="py-3 px-4 font-medium border-b">${data.name}</td>
-                        <td class="py-3 px-4 text-center border-b border-x ${scoreClass}">${data.score.toFixed(2)}</td>
-                        <td class="py-3 px-4 text-center border-b text-slate-600">${fmtNorm(norm.genMean, norm.genSd)}</td>
-                        <td class="py-3 px-4 text-center border-b text-slate-600">${fmtNorm(norm.psyMean, norm.psySd)}</td>
+                        <td class="py-3 px-4 text-center border-b text-slate-600">${data.grezzo.toFixed(2)}</td>
+                        <td class="py-3 px-4 text-center border-b border-x ${tScoreClass} text-lg">${data.tScore}</td>
                     </tr>`;
             }
-            // Aggiungi GSI in fondo
-            const normGSI = normativeData["GSI"];
-            const gsiHigh = gsiScore > (normGSI.genMean + normGSI.genSd);
-            tbody.innerHTML += `
-                <tr class="bg-prisma text-white font-bold">
-                    <td class="py-3 px-4 border-b">Global Severity Index (GSI)</td>
-                    <td class="py-3 px-4 text-center border-b border-x ${gsiHigh ? 'text-red-300' : ''} text-lg">${gsiScore.toFixed(2)}</td>
-                    <td class="py-3 px-4 text-center border-b">${fmtNorm(normGSI.genMean, normGSI.genSd)}</td>
-                    <td class="py-3 px-4 text-center border-b">${fmtNorm(normGSI.psyMean, normGSI.psySd)}</td>
-                </tr>`;
+            
+            // Aggiungi Indici Globali
+            const renderGlobalRow = (data, isGsi) => {
+                const isClinical = data.tScore >= 65;
+                let tClass = isClinical ? 'text-red-600' : 'text-slate-800';
+                if(isGsi) tClass = isClinical ? 'text-red-600 font-extrabold' : 'text-slate-800 font-bold';
+                
+                tbody.innerHTML += `
+                    <tr class="${isGsi ? 'bg-slate-100 border-t-4 border-slate-300' : 'bg-slate-50'}">
+                        <td class="py-3 px-4 ${isGsi ? 'font-bold text-prisma' : 'font-medium'} border-b">${data.name}</td>
+                        <td class="py-3 px-4 text-center border-b">${data.grezzo.toFixed(2)}</td>
+                        <td class="py-3 px-4 text-center border-b border-x text-lg ${tClass}">${data.tScore}</td>
+                    </tr>`;
+            };
+
+            renderGlobalRow(globalIndices.GSI, true);
+            renderGlobalRow(globalIndices.PST, false);
+            renderGlobalRow(globalIndices.PSDI, false);
 
             // 2. ITEM CRITICI RAGGRUPPATI
             const critBody = document.getElementById('criticalItemsBody');
@@ -377,7 +492,7 @@
                         critInDomain++;
                         totalCritical++;
                         domainHTML += `
-                            <tr class="border-b">
+                            <tr class="border-b hover:bg-red-50/50">
                                 <td class="py-2 px-4 text-center font-bold text-slate-500">${qNum}</td>
                                 <td class="py-2 px-4">${items[qNum - 1]}</td>
                                 <td class="py-2 px-4 text-center font-bold text-red-600">${val}</td>
@@ -386,7 +501,6 @@
                 });
 
                 if (critInDomain > 0) {
-                    // Intestazione del Dominio
                     critBody.innerHTML += `
                         <tr class="bg-slate-100 border-b-2 border-slate-200">
                             <td colspan="3" class="py-2 px-4 font-bold text-prisma uppercase text-sm tracking-wider">
@@ -398,73 +512,30 @@
             }
 
             if(totalCritical === 0) {
-                critBody.innerHTML = `<tr><td colspan="3" class="py-8 text-center text-slate-500 italic">Nessun item critico rilevato nel protocollo.</td></tr>`;
+                critBody.innerHTML = `<tr><td colspan="3" class="py-8 text-center text-slate-500 italic">Nessun item con intensità clinica elevata (≥ 3) rilevato nel protocollo.</td></tr>`;
             }
 
-            // 3. GRAFICO AVANZATO CON RANGE GRAFICO
+            // 3. GRAFICO DEI PUNTI T
             const labels = Object.keys(finalScores);
-            labels.push("GSI"); // Aggiungi GSI al grafico
+            labels.push("GSI");
             
-            const scoresData = labels.map(l => l === "GSI" ? gsiScore : finalScores[l].score);
-            
-            // Dati per i limiti (Standard Deviation shading)
-            const genMeanSD_Upper = labels.map(l => normativeData[l].genMean + normativeData[l].genSd);
-            const genMeanSD_Lower = labels.map(l => Math.max(0, normativeData[l].genMean - normativeData[l].genSd));
-            const psyMean = labels.map(l => normativeData[l].psyMean);
+            const tScoresData = labels.map(l => l === "GSI" ? globalIndices.GSI.tScore : finalScores[l].tScore);
+            const barColors = tScoresData.map(score => score >= 65 ? '#ef4444' : '#2c3e50');
 
-            if (barChartInstance) barChartInstance.destroy();
-            const ctxBar = document.getElementById('barChart').getContext('2d');
+            if (tScoreChartInstance) tScoreChartInstance.destroy();
+            const ctxBar = document.getElementById('tScoreChart').getContext('2d');
             
-            barChartInstance = new Chart(ctxBar, {
+            tScoreChartInstance = new Chart(ctxBar, {
                 type: 'bar',
                 data: {
                     labels: labels,
-                    datasets: [
-                        {
-                            // Barra Punteggio Paziente
-                            label: 'Punteggio Paziente',
-                            data: scoresData,
-                            backgroundColor: '#2c3e50',
-                            borderRadius: 4,
-                            order: 1
-                        },
-                        {
-                            // Upper bound area normale (Linea invisibile usata per il Fill)
-                            label: 'Limite Sup. Normale',
-                            data: genMeanSD_Upper,
-                            borderColor: 'transparent',
-                            backgroundColor: 'rgba(134, 239, 172, 0.3)', // bg-green-300 con opacità
-                            pointRadius: 0,
-                            type: 'line',
-                            fill: '+1', // Riempi fino al dataset successivo (Lower bound)
-                            order: 3,
-                            tension: 0
-                        },
-                        {
-                            // Lower bound area normale
-                            label: 'Limite Inf. Normale',
-                            data: genMeanSD_Lower,
-                            borderColor: 'transparent',
-                            pointRadius: 0,
-                            type: 'line',
-                            fill: false,
-                            order: 4,
-                            tension: 0
-                        },
-                        {
-                            // Linea Pazienti Psichiatrici (Media)
-                            label: 'Media Psichiatrica',
-                            data: psyMean,
-                            borderColor: '#ef4444', // red-500
-                            borderWidth: 2,
-                            borderDash: [5, 5],
-                            pointRadius: 0,
-                            type: 'line',
-                            fill: false,
-                            order: 2,
-                            tension: 0.1
-                        }
-                    ]
+                    datasets: [{
+                        label: 'Punti T Paziente',
+                        data: tScoresData,
+                        backgroundColor: barColors,
+                        borderRadius: 4,
+                        barPercentage: 0.6
+                    }]
                 },
                 options: {
                     animation: false,
@@ -472,33 +543,54 @@
                     maintainAspectRatio: false,
                     scales: { 
                         y: { 
-                            min: 0, max: 4,
-                            title: { display: true, text: 'Intensità Sintomatica' }
+                            min: 30, max: 100,
+                            title: { display: true, text: 'Punti T', font: {weight: 'bold'} }
                         },
-                        x: {
-                            ticks: { font: { weight: 'bold' } }
-                        }
+                        x: { ticks: { font: { weight: 'bold' } } }
                     },
                     plugins: { 
-                        legend: { 
-                            position: 'bottom',
-                            labels: {
-                                // Nascondi i dataset finti usati per l'ombreggiatura
-                                filter: function(item, chart) {
-                                    return item.text === 'Punteggio Paziente' || item.text === 'Media Psichiatrica';
-                                }
-                            }
-                        },
+                        legend: { display: false },
                         tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    if(context.datasetIndex === 1 || context.datasetIndex === 2) return null; // no tooltip per le linee di fill
-                                    return context.dataset.label + ': ' + context.raw.toFixed(2);
-                                }
-                            }
+                            callbacks: { label: function(context) { return `Punto T: ${context.raw}`; } }
                         }
                     }
-                }
+                },
+                plugins: [{
+                    id: 'customThresholds',
+                    beforeDraw: (chart) => {
+                        const ctx = chart.canvas.getContext('2d');
+                        const xAxis = chart.scales.x;
+                        const yAxis = chart.scales.y;
+                        const left = xAxis.left;
+                        const right = xAxis.right;
+                        
+                        // Fascia Verde Normalità (T tra 45 e 55)
+                        const y55 = yAxis.getPixelForValue(55);
+                        const y45 = yAxis.getPixelForValue(45);
+                        ctx.fillStyle = 'rgba(74, 222, 128, 0.4)'; // Verde visibile
+                        ctx.fillRect(left, y55, right - left, y45 - y55);
+                        
+                        // Linea della Media (T = 50)
+                        const y50 = yAxis.getPixelForValue(50);
+                        ctx.beginPath();
+                        ctx.moveTo(left, y50);
+                        ctx.lineTo(right, y50);
+                        ctx.lineWidth = 1;
+                        ctx.strokeStyle = '#16a34a'; 
+                        ctx.stroke();
+
+                        // Linea Rossa Soglia Clinica (T = 65)
+                        const y65 = yAxis.getPixelForValue(65);
+                        ctx.beginPath();
+                        ctx.moveTo(left, y65);
+                        ctx.lineTo(right, y65);
+                        ctx.lineWidth = 2;
+                        ctx.strokeStyle = '#ef4444';
+                        ctx.setLineDash([5, 5]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }]
             });
         }
 
@@ -508,61 +600,60 @@
         function exportClinicalReport() {
             const doc = new jsPDF();
             const pName = document.getElementById('patientName').value || "Anonimo";
+            const age = document.getElementById('patientAge').value || "N/D";
+            const sex = document.getElementById('patientSex').value === 'M' ? 'Maschio' : 'Femmina';
             const pDate = document.getElementById('testDate').value;
             const formattedDate = new Date(pDate).toLocaleDateString('it-IT');
-            const fmtNorm = (mean, sd) => `${mean.toFixed(2)} ± ${sd.toFixed(2)}`;
             
             // Intestazione
             doc.setFontSize(16);
             doc.setTextColor(44, 62, 80);
             doc.text("Centro di psicoterapia - Prisma (Lecce)", 14, 20);
-            doc.setFontSize(12);
+            doc.setFontSize(11);
             doc.setTextColor(100);
-            doc.text(`Relazione Clinica SCL-90 - Paziente: ${pName} - Data: ${formattedDate}`, 14, 28);
-            doc.line(14, 32, 196, 32);
+            doc.text(`Relazione SCL-90-R - Pz: ${pName} | Sesso: ${sex} | Età: ${age} | Data: ${formattedDate}`, 14, 28);
+            doc.setFontSize(9);
+            doc.text(document.getElementById('resNormInfo').innerText, 14, 33);
+            doc.line(14, 35, 196, 35);
 
             // Tabella Score Dettagliata
             const tableData = Object.entries(finalScores).map(([sigla, data]) => [
                 data.name,
-                data.score.toFixed(2),
-                fmtNorm(normativeData[sigla].genMean, normativeData[sigla].genSd),
-                fmtNorm(normativeData[sigla].psyMean, normativeData[sigla].psySd)
+                data.grezzo.toFixed(2),
+                data.tScore.toString()
             ]);
             
-            // Push GSI
-            tableData.push([
-                'Global Severity Index (GSI)',
-                gsiScore.toFixed(2),
-                fmtNorm(normativeData['GSI'].genMean, normativeData['GSI'].genSd),
-                fmtNorm(normativeData['GSI'].psyMean, normativeData['GSI'].psySd)
-            ]);
+            tableData.push([globalIndices.GSI.name, globalIndices.GSI.grezzo.toFixed(2), globalIndices.GSI.tScore.toString()]);
+            tableData.push([globalIndices.PST.name, globalIndices.PST.grezzo.toFixed(2), globalIndices.PST.tScore.toString()]);
+            tableData.push([globalIndices.PSDI.name, globalIndices.PSDI.grezzo.toFixed(2), globalIndices.PSDI.tScore.toString()]);
 
             doc.autoTable({
-                startY: 38,
-                head: [['Scala Sintomatologica', 'Pz. Grezzo', 'Pop. Gen. (Med±DS)', 'Paz. Psi. (Med±DS)']],
+                startY: 40,
+                head: [['Scala / Indice', 'Punteggio Grezzo', 'Punti T']],
                 body: tableData,
                 theme: 'grid',
                 headStyles: { fillColor: [44, 62, 80] },
                 columnStyles: { 
-                    0: { cellWidth: 55 },
-                    1: { halign: 'center', fontStyle: 'bold' },
-                    2: { halign: 'center' },
-                    3: { halign: 'center' }
+                    0: { cellWidth: 90, fontStyle: 'bold' },
+                    1: { halign: 'center' },
+                    2: { halign: 'center', fontStyle: 'bold', fontSize: 11 }
                 },
                 willDrawCell: function(data) {
-                    // Evidenzia GSI riga finale
-                    if(data.row.index === tableData.length - 1 && data.section === 'body') {
-                        doc.setFillColor(44, 62, 80);
-                        doc.setTextColor(255, 255, 255);
+                    if (data.section === 'body' && data.column.index === 2) {
+                        const tScore = parseInt(data.cell.raw);
+                        if (tScore >= 65) doc.setTextColor(220, 38, 38);
+                    }
+                    if(data.section === 'body' && data.row.index >= tableData.length - 3) {
+                        doc.setFillColor(241, 245, 249); // Sfondo grigino per GSI, PST, PSDI
                     }
                 }
             });
 
             let currentY = doc.lastAutoTable.finalY + 15;
             
-            // Grafico (Full Width)
+            // Grafico
             const tempBarCanvas = document.createElement('canvas');
-            const barChartCanvas = document.getElementById('barChart');
+            const barChartCanvas = document.getElementById('tScoreChart');
             tempBarCanvas.width = barChartCanvas.width;
             tempBarCanvas.height = barChartCanvas.height;
             const ctxBar = tempBarCanvas.getContext('2d');
@@ -571,7 +662,6 @@
             ctxBar.drawImage(barChartCanvas, 0, 0);
             const barImg = tempBarCanvas.toDataURL('image/png', 1.0);
             
-            // Controllo spazio
             if (currentY > 180) {
                 doc.addPage();
                 currentY = 20;
@@ -579,11 +669,10 @@
 
             doc.setFontSize(12);
             doc.setTextColor(44, 62, 80);
-            doc.text("Profilo Dimensionale vs Range Normativi", 14, currentY);
-            // Inserisci grafico bello largo
+            doc.text("Profilo Dimensionale (Punti T) - Linea rossa: Soglia Clinica (65)", 14, currentY);
             doc.addImage(barImg, 'PNG', 14, currentY + 5, 180, 80);
 
-            // Item Critici Raggruppati
+            // Item Critici
             currentY += 95;
             
             const criticalData = [];
@@ -595,16 +684,14 @@
                 });
 
                 if (itemsInDom.length > 0) {
-                    // Riga intestazione Dominio
                     criticalData.push([{ content: `${domainName} (${itemsInDom.length}/${domainData.items.length})`, colSpan: 3, styles: { fillColor: [241, 245, 249], textColor: [44, 62, 80], fontStyle: 'bold' } }]);
-                    // Righe item
                     itemsInDom.forEach(row => criticalData.push(row));
                 }
             }
 
             doc.autoTable({
                 startY: currentY,
-                head: [['Item', 'Sintomo Rilevato (Valore >= 3)', 'Punteggio']],
+                head: [['Item', 'Sintomo Rilevato (Valore ≥ 3)', 'Punteggio']],
                 body: criticalData.length > 0 ? criticalData : [['', 'Nessun item critico rilevato', '']],
                 theme: 'grid',
                 headStyles: { fillColor: [220, 38, 38] },
@@ -614,12 +701,14 @@
                 }
             });
 
-            doc.save(`SCL90_Relazione_${pName.replace(/\s+/g, '_')}.pdf`);
+            doc.save(`SCL90R_Relazione_${pName.replace(/\s+/g, '_')}.pdf`);
         }
 
         function exportProtocol() {
             const doc = new jsPDF();
             const pName = document.getElementById('patientName').value || "Anonimo";
+            const age = document.getElementById('patientAge').value || "N/D";
+            const sex = document.getElementById('patientSex').value === 'M' ? 'Maschio' : 'Femmina';
             const pDate = document.getElementById('testDate').value;
             const formattedDate = new Date(pDate).toLocaleDateString('it-IT');
             
@@ -628,7 +717,7 @@
             doc.text("Centro di psicoterapia - Prisma (Lecce)", 14, 20);
             doc.setFontSize(12);
             doc.setTextColor(100);
-            doc.text(`Protocollo Risposte SCL-90 - Paziente: ${pName} - Data: ${formattedDate}`, 14, 28);
+            doc.text(`Protocollo Risposte SCL-90-R - Pz: ${pName} | Sesso: ${sex} | Età: ${age} | Data: ${formattedDate}`, 14, 28);
             
             const protocolData = responses.map((val, index) => [
                 index + 1,
@@ -645,7 +734,7 @@
                 columnStyles: { 0: {cellWidth: 15}, 2: {cellWidth: 25, fontStyle: 'bold', halign: 'center'} }
             });
 
-            doc.save(`SCL90_Risposte_${pName.replace(/\s+/g, '_')}.pdf`);
+            doc.save(`SCL90R_Risposte_${pName.replace(/\s+/g, '_')}.pdf`);
         }
     </script>
 </body>
