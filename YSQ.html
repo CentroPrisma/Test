@@ -14,7 +14,6 @@
     <!-- jsPDF e plugin Autotable per tabelle multi-pagina perfette -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script>
         tailwind.config = {
@@ -157,21 +156,34 @@
             <!-- Questo blocco è per l'anteprima web -->
             <div id="clinical-report-content" class="bg-white rounded-xl p-8 card-shadow space-y-12">
                 
-                <!-- Parte 1: Grafico e Punteggi Grezzi -->
-                <div>
-                    <h3 class="text-2xl font-bold border-b border-slate-200 text-prisma pb-4 mb-6">Profilo Schemi</h3>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-                        <!-- Tabella Base -->
-                        <div id="scoring-table-container"></div>
-                        <!-- Grafico a Barre -->
-                        <div class="w-full bg-white rounded-lg border border-slate-200 p-4">
-                            <canvas id="schemaChart"></canvas>
+                <h3 class="text-2xl font-bold border-b border-slate-200 text-prisma pb-4">Profilo Schemi</h3>
+                
+                <!-- Tabella Punteggi (Al centro) -->
+                <div id="scoring-table-container"></div>
+
+                <!-- Grafici Espansi a Tutta Larghezza -->
+                <div class="space-y-12 border-t border-slate-100 pt-8">
+                    
+                    <!-- Grafico Radar -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-center text-slate-700 mb-4">Rappresentazione a Ragnatela (Radar)</h4>
+                        <div class="w-full max-w-2xl mx-auto bg-white rounded-lg p-4">
+                            <canvas id="radarChart"></canvas>
                         </div>
                     </div>
+
+                    <!-- Grafico a Barre -->
+                    <div>
+                        <h4 class="text-lg font-semibold text-center text-slate-700 mb-4">Andamento Lineare e Media</h4>
+                        <div class="w-full bg-white rounded-lg p-4">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Parte 3: Item Critici -->
-                <div>
+                <div class="border-t border-slate-100 pt-8">
                     <h3 class="text-xl font-bold border-b border-slate-200 text-prisma pb-4 mb-6">Item Critici (Risposte 5 o 6)</h3>
                     <p class="text-sm text-slate-500 mb-4">Di seguito sono elencate le domande specifiche a cui il paziente ha attribuito il punteggio massimo (Quasi del tutto vero / Mi descrive perfettamente), utili per l'approfondimento clinico.</p>
                     <div id="critical-items-container"></div>
@@ -179,7 +191,7 @@
 
             </div>
             
-            <button onclick="location.reload()" class="w-full text-slate-400 hover:text-slate-600 underline text-sm mt-8">
+            <button onclick="location.reload()" class="w-full text-slate-400 hover:text-slate-600 underline text-sm mt-8 pb-12">
                 Reset e Torna alla Home
             </button>
         </section>
@@ -385,9 +397,9 @@
             const orderedLabels = [];
             const orderedScores = [];
 
-            // 1. RENDER TABELLA HTML WEB
+            // 1. RENDER TABELLA HTML WEB (COMPATTA E CENTRATA)
             let tableHTML = `
-                <div class="max-w-sm mx-auto bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                <div class="max-w-md mx-auto bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                     <table class="w-full text-left border-collapse text-sm">
                         <thead>
                             <tr class="bg-prisma text-white">
@@ -411,7 +423,7 @@
                     tableHTML += `
                         <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
                             <td class="p-2 pl-4 text-slate-700">${schemaNames[idx]}</td>
-                            <td class="p-2 text-center text-prisma font-bold">${schemaScores[idx]}</td>
+                            <td class="p-2 text-center text-prisma font-bold text-base">${schemaScores[idx]}</td>
                         </tr>
                     `;
                 });
@@ -424,9 +436,40 @@
             `;
             document.getElementById('scoring-table-container').innerHTML = tableHTML;
 
-            // 2. RENDER GRAFICO WEB
-            const ctx = document.getElementById('schemaChart').getContext('2d');
-            new Chart(ctx, {
+            // 2. RENDER GRAFICO RADAR (RAGNATELA)
+            const ctxRadar = document.getElementById('radarChart').getContext('2d');
+            new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: orderedLabels,
+                    datasets: [{
+                        label: 'Punteggio Schema',
+                        data: orderedScores,
+                        backgroundColor: 'rgba(44, 62, 80, 0.2)', // Prisma con opacità
+                        borderColor: '#2c3e50',
+                        pointBackgroundColor: '#e74c3c', // Punti rossi per risaltare
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#e74c3c'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: false,
+                    scales: { 
+                        r: { 
+                            beginAtZero: true, 
+                            max: 30, 
+                            ticks: { stepSize: 5 } 
+                        } 
+                    },
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+
+            // 3. RENDER GRAFICO A BARRE (TUTTA LARGHEZZA)
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            new Chart(ctxBar, {
                 type: 'bar',
                 data: {
                     labels: orderedLabels,
@@ -461,12 +504,11 @@
                         y: { beginAtZero: true, max: 30, ticks: { stepSize: 5 } },
                         x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } }
                     },
-                    plugins: { legend: { position: 'top' } },
-                    backgroundColor: 'white' // Forza lo sfondo bianco per il canvas
+                    plugins: { legend: { position: 'top' } }
                 }
             });
 
-            // 3. RENDER ITEM CRITICI WEB
+            // 4. RENDER ITEM CRITICI WEB
             let criticalItemsCount = 0;
             let criticalItemsHTML = `
                 <table class="w-full text-left border-collapse border border-slate-200 text-sm">
@@ -485,7 +527,7 @@
                     criticalItemsCount++;
                     criticalItemsHTML += `
                         <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                            <td class="p-3 text-center font-bold text-red-600 align-top">${score}</td>
+                            <td class="p-3 text-center font-bold text-red-600 align-top text-lg">${score}</td>
                             <td class="p-3 text-slate-700 italic">${itemText}</td>
                         </tr>
                     `;
@@ -495,7 +537,7 @@
             criticalItemsHTML += `</tbody></table>`;
 
             if (criticalItemsCount === 0) {
-                document.getElementById('critical-items-container').innerHTML = `<p class="text-slate-500 italic p-4 bg-slate-50 rounded-lg">Nessun item ha ricevuto un punteggio di 5 o 6.</p>`;
+                document.getElementById('critical-items-container').innerHTML = `<p class="text-slate-500 italic p-4 bg-slate-50 rounded-lg border border-slate-200">Nessun item ha ricevuto un punteggio di 5 o 6.</p>`;
             } else {
                 document.getElementById('critical-items-container').innerHTML = criticalItemsHTML;
             }
@@ -533,13 +575,13 @@
             doc.save(`Protocollo_YSQS3_${patientData.name.replace(/\s+/g, '_')}.pdf`);
         }
 
-        // RELAZIONE CLINICA (NATIVA CON AUTOTABLE PER NON TAGLIARE IL TESTO)
+        // RELAZIONE CLINICA (Motore Misto: jsPDF Autotable + Estrazione Grafici)
         function generateClinicalPDF(event) {
             const button = event.target.closest('button');
             const originalText = button.innerHTML;
             button.innerHTML = "Generazione in corso...";
             
-            // Ricreiamo i dati necessari
+            // Estrazione Dati per Tabella
             const schemaScores = new Array(18).fill(0);
             for (let i = 0; i < answers.length; i++) { schemaScores[i % 18] += answers[i]; }
 
@@ -552,32 +594,14 @@
             doc.setTextColor(44, 62, 80);
             doc.text("Centro di psicoterapia - Prisma | Lecce", 105, 20, { align: "center" });
             doc.setFontSize(14);
-            doc.text("Relazione Clinica - YSQ-S3", 105, 28, { align: "center" });
+            doc.text("Relazione Clinica - Profilo Schemi YSQ-S3", 105, 28, { align: "center" });
             doc.setFontSize(11);
             doc.setTextColor(100, 100, 100);
             doc.text(`Paziente: ${patientData.name}   |   Età: ${patientData.age}   |   Data: ${patientData.date}`, 105, 36, { align: "center" });
             
             let currentY = 45;
 
-            // 1. INSERIMENTO DEL GRAFICO COME IMMAGINE SCALATA
-            const chartCanvas = document.getElementById('schemaChart');
-            // Diamo a chart.js uno sfondo bianco forzato prima di fare lo screen
-            const ctxChart = chartCanvas.getContext('2d');
-            ctxChart.save();
-            ctxChart.globalCompositeOperation = 'destination-over';
-            ctxChart.fillStyle = 'white';
-            ctxChart.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
-            const imgData = chartCanvas.toDataURL('image/png', 1.0);
-            ctxChart.restore();
-
-            const availableWidth = pdfWidth - (margin * 2);
-            const imgProps = doc.getImageProperties(imgData);
-            const imgHeight = (imgProps.height * availableWidth) / imgProps.width;
-            
-            doc.addImage(imgData, 'PNG', margin, currentY, availableWidth, imgHeight);
-            currentY += imgHeight + 10;
-
-            // 2. CREAZIONE TABELLA PUNTEGGI CON AUTOTABLE
+            // --- INSERIMENTO TABELLA PUNTEGGI ---
             const tableBody = [];
             domains.forEach(domain => {
                 tableBody.push([{ 
@@ -605,7 +629,62 @@
 
             currentY = doc.lastAutoTable.finalY + 15;
 
-            // 3. CREAZIONE TABELLA ITEM CRITICI CON AUTOTABLE (Così non vengono tagliati)
+            // Funzione di supporto per convertire in immagine i canvas con sfondo bianco garantito
+            const getCanvasImage = (canvasId) => {
+                const cvs = document.getElementById(canvasId);
+                const ctx = cvs.getContext('2d');
+                ctx.save();
+                ctx.globalCompositeOperation = 'destination-over';
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, cvs.width, cvs.height);
+                const img = cvs.toDataURL('image/png', 1.0);
+                ctx.restore();
+                return { imgData: img, width: cvs.width, height: cvs.height };
+            };
+
+            // --- INSERIMENTO GRAFICO RADAR ---
+            // Passiamo alla pagina successiva per garantire che i grafici abbiano spazio
+            doc.addPage();
+            currentY = 20;
+
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Rappresentazione a Ragnatela (Radar)", margin, currentY);
+            currentY += 5;
+
+            const radarData = getCanvasImage('radarChart');
+            const availableWidth = pdfWidth - (margin * 2);
+            // Limitiamo la larghezza del radar a 120mm per non farlo enorme sul PDF
+            const radarPdfWidth = 120; 
+            const radarPdfHeight = (radarData.height * radarPdfWidth) / radarData.width;
+            const radarX = (pdfWidth - radarPdfWidth) / 2; // Centrato
+
+            doc.addImage(radarData.imgData, 'PNG', radarX, currentY, radarPdfWidth, radarPdfHeight);
+            currentY += radarPdfHeight + 15;
+
+            // --- INSERIMENTO GRAFICO A BARRE ---
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Andamento Lineare e Media", margin, currentY);
+            currentY += 5;
+
+            const barData = getCanvasImage('barChart');
+            const barPdfHeight = (barData.height * availableWidth) / barData.width;
+
+            // Se il grafico a barre non entra nella pagina, creane una nuova
+            if (currentY + barPdfHeight > doc.internal.pageSize.getHeight() - margin) {
+                doc.addPage();
+                currentY = 20;
+            }
+
+            doc.addImage(barData.imgData, 'PNG', margin, currentY, availableWidth, barPdfHeight);
+            currentY += barPdfHeight + 15;
+
+            // --- INSERIMENTO TABELLA ITEM CRITICI ---
+            // Creiamo sempre una nuova pagina per gli item in modo che inizino in modo pulito
+            doc.addPage();
+            currentY = 20;
+
             doc.setFontSize(14);
             doc.setTextColor(44, 62, 80);
             doc.text("Item Critici (Risposte 5 o 6)", margin, currentY);
@@ -628,11 +707,11 @@
                     head: [['Risp.', 'Testo dell\'Item']],
                     body: criticalBody,
                     theme: 'grid',
-                    headStyles: { fillColor: [254, 226, 226], textColor: [153, 27, 27] }, // Colori rossi (Tailwind red-50, red-800)
+                    headStyles: { fillColor: [254, 226, 226], textColor: [153, 27, 27] },
                     columnStyles: { 0: { cellWidth: 20 } },
                     margin: { left: margin, right: margin },
                     styles: { overflow: 'linebreak' },
-                    pageBreak: 'auto' // Questo previene magicamente il taglio delle righe a metà!
+                    pageBreak: 'auto'
                 });
             } else {
                 doc.setFontSize(10);
@@ -640,6 +719,7 @@
                 doc.text("Nessun item ha ricevuto un punteggio di 5 o 6.", margin, currentY + 5);
             }
 
+            // Salvataggio
             doc.save(`Relazione_Clinica_YSQS3_${patientData.name.replace(/\s+/g, '_')}.pdf`);
             button.innerHTML = originalText;
         }
