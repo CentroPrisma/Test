@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SCL-90 | Centro di Psicoterapia Prisma</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- jsPDF & AutoTable -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
@@ -16,6 +19,8 @@
                 extend: {
                     colors: {
                         prisma: '#2c3e50',
+                        normal: '#86efac', // Verde per range normativo
+                        clinical: '#ef4444' // Rosso per range clinico
                     }
                 }
             }
@@ -23,15 +28,12 @@
     </script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        /* Nascondi scrollbar per pulizia UI ma mantieni lo scorrimento */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
         
-        .option-btn {
-            transition: all 0.2s ease-in-out;
-        }
+        .option-btn { transition: all 0.2s ease-in-out; }
         .option-btn.selected {
             background-color: #2c3e50;
             color: white;
@@ -41,11 +43,12 @@
 </head>
 <body class="bg-slate-50 text-slate-800 pb-20">
 
+    <!-- HEADER -->
     <header class="bg-prisma text-white p-6 shadow-md">
         <div class="max-w-4xl mx-auto flex justify-between items-center">
             <div>
-                <h1 class="text-2xl font-bold">Centro di psicoterapia - Prisma</h1>
-                <p class="text-sm opacity-80">Lecce</p>
+                <h1 class="text-2xl font-bold">Centro di psicoterapia Lecce - Prisma</h1>
+                <p class="text-sm opacity-80">USO ESCLUSIVO NON CONDIVISIBILE</p>
             </div>
             <div class="text-right">
                 <h2 class="text-xl font-semibold">SCL-90</h2>
@@ -56,6 +59,7 @@
 
     <main class="max-w-4xl mx-auto mt-8 px-4" id="mainContainer">
         
+        <!-- DATI PAZIENTE -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mb-8">
             <h3 class="text-lg font-semibold mb-4 text-prisma border-b pb-2">Dati Paziente</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -70,6 +74,7 @@
             </div>
         </div>
 
+        <!-- LEGENDA STICKY -->
         <div class="sticky top-0 z-50 bg-white/95 backdrop-blur shadow-sm border-b border-slate-200 py-3 px-4 mb-6 rounded-lg flex justify-between items-center text-sm md:text-base">
             <span class="font-bold text-prisma mr-4 hidden md:inline">Legenda:</span>
             <div class="flex-1 flex justify-between font-medium text-slate-600">
@@ -81,8 +86,10 @@
             </div>
         </div>
 
+        <!-- CONTENITORE DOMANDE -->
         <div id="questionsContainer" class="space-y-6"></div>
 
+        <!-- ERRORE E PULSANTE -->
         <div id="errorAlert" class="hidden mt-8 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
             <strong class="font-bold">Attenzione!</strong>
             <span class="block sm:inline"> Hai saltato alcune domande. Controlla i blocchi evidenziati in rosso.</span>
@@ -96,69 +103,75 @@
 
     </main>
 
-    <div id="resultsDashboard" class="hidden max-w-5xl mx-auto mt-8 px-4 pb-20">
+    <!-- DASHBOARD RISULTATI (Nascosta all'avvio) -->
+    <div id="resultsDashboard" class="hidden max-w-6xl mx-auto mt-8 px-4 pb-20">
         <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200">
-            <div class="flex justify-between items-end border-b-2 border-prisma pb-4 mb-8">
+            <div class="flex justify-between items-end border-b-2 border-prisma pb-4 mb-8 flex-wrap gap-4">
                 <div>
                     <h2 class="text-3xl font-bold text-prisma">Referto Clinico SCL-90</h2>
                     <p id="resPatientInfo" class="text-slate-600 mt-1 text-lg"></p>
                 </div>
-                <div class="flex gap-4">
+                <div class="flex gap-4 flex-wrap">
                     <button onclick="exportClinicalReport()" class="bg-prisma text-white px-4 py-2 rounded-lg hover:bg-slate-700 transition flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         PDF Relazione
                     </button>
                     <button onclick="exportProtocol()" class="bg-white text-prisma border border-prisma px-4 py-2 rounded-lg hover:bg-slate-50 transition flex items-center gap-2">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        PDF Protocollo
+                        PDF Risposte
                     </button>
                 </div>
             </div>
 
-            <div class="mb-10">
-                <h3 class="text-xl font-bold text-prisma mb-4">Punteggi per Dimensioni Sintomatologiche</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border border-slate-200">
-                        <thead class="bg-slate-100 text-slate-700">
+            <!-- TABELLA PUNTEGGI (LARGHEZZA INTERA) -->
+            <div class="mb-10 w-full">
+                <h3 class="text-xl font-bold text-prisma mb-4">Profilo Paziente vs Popolazioni Normative (Holi, 2003)</h3>
+                <div class="overflow-x-auto shadow-sm rounded-lg border border-slate-200">
+                    <table class="min-w-full bg-white text-sm md:text-base">
+                        <thead class="bg-prisma text-white">
                             <tr>
-                                <th class="py-3 px-4 border-b text-left">Dominio</th>
-                                <th class="py-3 px-4 border-b text-center w-32">Punteggio Medio</th>
+                                <th class="py-3 px-4 text-left font-semibold">Scala</th>
+                                <th class="py-3 px-4 text-center font-bold bg-slate-800">Pz. Grezzo</th>
+                                <th class="py-3 px-4 text-center font-semibold">Pop. Generale (Media ± DS)</th>
+                                <th class="py-3 px-4 text-center font-semibold">Pazienti Psichiatrici (Media ± DS)</th>
                             </tr>
                         </thead>
-                        <tbody id="scoresTableBody" class="text-slate-700">
-                            </tbody>
+                        <tbody id="scoresTableBody" class="text-slate-700 divide-y divide-slate-200">
+                            <!-- Popolato da JS -->
+                        </tbody>
                     </table>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center">
-                    <h4 class="font-bold text-prisma mb-2">Profilo Dimensionale (Radar)</h4>
-                    <div class="w-full max-w-md aspect-square">
-                        <canvas id="radarChart"></canvas>
-                    </div>
-                </div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center">
-                    <h4 class="font-bold text-prisma mb-2">Punteggi vs Media Paziente (Barre)</h4>
-                    <div class="w-full h-full min-h-[300px]">
+            <!-- GRAFICO SINGOLO CON DS GRAFICA -->
+            <div class="mb-10 w-full">
+                <div class="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                    <h4 class="font-bold text-prisma mb-4 text-center text-xl">Profilo Dimensionale: Punteggi vs Range Normativi</h4>
+                    <p class="text-sm text-center text-slate-500 mb-4">
+                        La <span class="inline-block w-4 h-4 bg-green-200 border border-green-400 align-middle"></span> fascia verde indica il range di normalità della Popolazione Generale (Media ± 1 Deviazione Standard).<br>
+                        La <span class="text-red-500 font-bold">---</span> linea tratteggiata rossa indica la Media dei Pazienti Psichiatrici.
+                    </p>
+                    <div class="w-full h-[400px] bg-white p-4 rounded shadow-sm border border-slate-100">
                         <canvas id="barChart"></canvas>
                     </div>
                 </div>
             </div>
 
+            <!-- ITEM CRITICI RAGGRUPPATI -->
             <div>
                 <h3 class="text-xl font-bold text-prisma mb-4">Item Critici (Punteggi 3 o 4)</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border border-slate-200">
-                        <thead class="bg-red-50 text-red-800">
+                <div class="overflow-x-auto shadow-sm rounded-lg border border-slate-200">
+                    <table class="min-w-full bg-white">
+                        <thead class="bg-red-50 text-red-800 border-b border-red-200">
                             <tr>
-                                <th class="py-3 px-4 border-b text-left w-16">Item</th>
-                                <th class="py-3 px-4 border-b text-left">Sintomo</th>
-                                <th class="py-3 px-4 border-b text-center w-24">Valore</th>
+                                <th class="py-3 px-4 text-left w-16">Item</th>
+                                <th class="py-3 px-4 text-left">Sintomo</th>
+                                <th class="py-3 px-4 text-center w-24">Valore</th>
                             </tr>
                         </thead>
                         <tbody id="criticalItemsBody" class="text-slate-700">
-                            </tbody>
+                            <!-- Popolato da JS -->
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -170,7 +183,6 @@
     </div>
 
     <script>
-        // Set data odierna di default
         document.getElementById('testDate').valueAsDate = new Date();
 
         const items = [
@@ -207,20 +219,34 @@
             "Idea che qualcosa non vada bene nella tua mente"
         ];
 
+        // Definizione domini (Sigle estrapolate per i grafici)
         const domains = {
-            "Somatizzazione (SOM)": [1, 4, 12, 27, 40, 42, 48, 49, 52, 53, 56, 58],
-            "Ossessività-Compulsività (O-C)": [3, 9, 10, 28, 38, 45, 46, 51, 55, 65],
-            "Ipersensibilità Interpersonale (INT)": [6, 21, 34, 36, 37, 41, 61, 69, 73],
-            "Depressione (DEP)": [5, 14, 15, 20, 22, 26, 29, 30, 31, 32, 54, 71, 79],
-            "Ansia (ANX)": [2, 17, 23, 33, 39, 57, 72, 78, 80, 86],
-            "Ostilità (HOS)": [11, 24, 63, 67, 74, 81],
-            "Ansia Fobica (PHOB)": [13, 25, 47, 50, 70, 75, 82],
-            "Ideazione Paranoide (PAR)": [8, 18, 43, 68, 76, 83],
-            "Psicoticismo (PSY)": [7, 16, 35, 62, 77, 84, 85, 87, 88, 90]
+            "Somatizzazione (SOM)": { items: [1, 4, 12, 27, 40, 42, 48, 49, 52, 53, 56, 58], sigla: "SOM" },
+            "Ossessività-Compulsività (O-C)": { items: [3, 9, 10, 28, 38, 45, 46, 51, 55, 65], sigla: "O-C" },
+            "Ipersensibilità Interpersonale (INT)": { items: [6, 21, 34, 36, 37, 41, 61, 69, 73], sigla: "INT" },
+            "Depressione (DEP)": { items: [5, 14, 15, 20, 22, 26, 29, 30, 31, 32, 54, 71, 79], sigla: "DEP" },
+            "Ansia (ANX)": { items: [2, 17, 23, 33, 39, 57, 72, 78, 80, 86], sigla: "ANX" },
+            "Ostilità (HOS)": { items: [11, 24, 63, 67, 74, 81], sigla: "HOS" },
+            "Ansia Fobica (PHOB)": { items: [13, 25, 47, 50, 70, 75, 82], sigla: "PHOB" },
+            "Ideazione Paranoide (PAR)": { items: [8, 18, 43, 68, 76, 83], sigla: "PAR" },
+            "Psicoticismo (PSY)": { items: [7, 16, 35, 62, 77, 84, 85, 87, 88, 90], sigla: "PSY" }
+        };
+
+        // Dati Normativi (Holi, 2003)
+        const normativeData = {
+            "SOM": { genMean: 0.67, genSd: 0.55, psyMean: 1.39, psySd: 0.77 },
+            "O-C": { genMean: 0.82, genSd: 0.57, psyMean: 1.91, psySd: 0.85 },
+            "INT": { genMean: 0.74, genSd: 0.55, psyMean: 1.60, psySd: 0.84 },
+            "DEP": { genMean: 0.73, genSd: 0.55, psyMean: 2.17, psySd: 0.87 },
+            "ANX": { genMean: 0.53, genSd: 0.49, psyMean: 1.59, psySd: 0.80 },
+            "HOS": { genMean: 0.58, genSd: 0.53, psyMean: 1.13, psySd: 0.72 },
+            "PHOB": { genMean: 0.24, genSd: 0.39, psyMean: 1.05, psySd: 0.85 },
+            "PAR": { genMean: 0.53, genSd: 0.58, psyMean: 1.18, psySd: 0.82 },
+            "PSY": { genMean: 0.31, genSd: 0.40, psyMean: 0.94, psySd: 0.65 },
+            "GSI": { genMean: 0.60, genSd: 0.44, psyMean: 1.56, psySd: 0.61 }
         };
 
         const responses = new Array(90).fill(null);
-        let radarChartInstance = null;
         let barChartInstance = null;
         let finalScores = {};
         let gsiScore = 0;
@@ -249,20 +275,12 @@
 
         function selectOption(qIndex, val) {
             responses[qIndex] = val;
-            
-            // Rimuovi classe selected dai fratelli
-            for(let i=0; i<=4; i++) {
-                document.getElementById(`btn-${qIndex}-${i}`).classList.remove('selected');
-            }
-            // Aggiungi a quello cliccato
+            for(let i=0; i<=4; i++) document.getElementById(`btn-${qIndex}-${i}`).classList.remove('selected');
             document.getElementById(`btn-${qIndex}-${val}`).classList.add('selected');
-            
-            // Rimuovi eventuale highlight di errore
             document.getElementById(`qCard-${qIndex+1}`).classList.remove('border-red-500', 'bg-red-50');
         }
 
         function calculateResults() {
-            // Validazione
             let firstMissed = -1;
             responses.forEach((res, index) => {
                 const card = document.getElementById(`qCard-${index+1}`);
@@ -282,18 +300,19 @@
 
             document.getElementById('errorAlert').classList.add('hidden');
 
-            // Calcolo Score
+            // Calcolo
             let totalSum = 0;
             responses.forEach(val => totalSum += val);
             gsiScore = totalSum / 90;
 
             finalScores = {};
-            for (const [domain, qList] of Object.entries(domains)) {
+            for (const [domainName, domainData] of Object.entries(domains)) {
                 let sum = 0;
-                qList.forEach(qNum => {
-                    sum += responses[qNum - 1];
-                });
-                finalScores[domain] = sum / qList.length;
+                domainData.items.forEach(qNum => sum += responses[qNum - 1]);
+                finalScores[domainData.sigla] = {
+                    name: domainName,
+                    score: sum / domainData.items.length
+                };
             }
 
             renderDashboard();
@@ -307,109 +326,191 @@
 
             const pName = document.getElementById('patientName').value || "Anonimo";
             const pDate = document.getElementById('testDate').value;
-            document.getElementById('resPatientInfo').innerText = `Paziente: ${pName} | Data: ${pDate}`;
+            const formattedDate = new Date(pDate).toLocaleDateString('it-IT');
+            document.getElementById('resPatientInfo').innerText = `Paziente: ${pName} | Data: ${formattedDate}`;
 
-            // Tabella
+            // 1. COMPILAZIONE TABELLA NORMATIVA
             const tbody = document.getElementById('scoresTableBody');
             tbody.innerHTML = '';
-            for (const [domain, score] of Object.entries(finalScores)) {
+            
+            // Funzione per formattare la deviazione standard
+            const fmtNorm = (mean, sd) => `${mean.toFixed(2)} ± ${sd.toFixed(2)}`;
+            
+            for (const [sigla, data] of Object.entries(finalScores)) {
+                const norm = normativeData[sigla];
+                
+                // Alert visivo per punteggi alti nella tabella
+                const isHigh = data.score > (norm.genMean + norm.genSd);
+                const scoreClass = isHigh ? "text-red-600 font-bold bg-red-50" : "font-bold bg-slate-50";
+
                 tbody.innerHTML += `
-                    <tr>
-                        <td class="py-2 px-4 border-b font-medium">${domain}</td>
-                        <td class="py-2 px-4 border-b text-center font-bold">${score.toFixed(2)}</td>
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="py-3 px-4 font-medium border-b">${data.name}</td>
+                        <td class="py-3 px-4 text-center border-b border-x ${scoreClass}">${data.score.toFixed(2)}</td>
+                        <td class="py-3 px-4 text-center border-b text-slate-600">${fmtNorm(norm.genMean, norm.genSd)}</td>
+                        <td class="py-3 px-4 text-center border-b text-slate-600">${fmtNorm(norm.psyMean, norm.psySd)}</td>
                     </tr>`;
             }
+            // Aggiungi GSI in fondo
+            const normGSI = normativeData["GSI"];
+            const gsiHigh = gsiScore > (normGSI.genMean + normGSI.genSd);
             tbody.innerHTML += `
-                <tr class="bg-prisma/10">
-                    <td class="py-3 px-4 border-b font-bold text-prisma">Global Severity Index (GSI)</td>
-                    <td class="py-3 px-4 border-b text-center font-bold text-prisma">${gsiScore.toFixed(2)}</td>
+                <tr class="bg-prisma text-white font-bold">
+                    <td class="py-3 px-4 border-b">Global Severity Index (GSI)</td>
+                    <td class="py-3 px-4 text-center border-b border-x ${gsiHigh ? 'text-red-300' : ''} text-lg">${gsiScore.toFixed(2)}</td>
+                    <td class="py-3 px-4 text-center border-b">${fmtNorm(normGSI.genMean, normGSI.genSd)}</td>
+                    <td class="py-3 px-4 text-center border-b">${fmtNorm(normGSI.psyMean, normGSI.psySd)}</td>
                 </tr>`;
 
-            // Item Critici
+            // 2. ITEM CRITICI RAGGRUPPATI
             const critBody = document.getElementById('criticalItemsBody');
             critBody.innerHTML = '';
-            let hasCritical = false;
-            responses.forEach((val, index) => {
-                if (val >= 3) {
-                    hasCritical = true;
+            let totalCritical = 0;
+
+            for (const [domainName, domainData] of Object.entries(domains)) {
+                let domainHTML = '';
+                let critInDomain = 0;
+                
+                domainData.items.forEach(qNum => {
+                    let val = responses[qNum - 1];
+                    if (val >= 3) {
+                        critInDomain++;
+                        totalCritical++;
+                        domainHTML += `
+                            <tr class="border-b">
+                                <td class="py-2 px-4 text-center font-bold text-slate-500">${qNum}</td>
+                                <td class="py-2 px-4">${items[qNum - 1]}</td>
+                                <td class="py-2 px-4 text-center font-bold text-red-600">${val}</td>
+                            </tr>`;
+                    }
+                });
+
+                if (critInDomain > 0) {
+                    // Intestazione del Dominio
                     critBody.innerHTML += `
-                        <tr>
-                            <td class="py-2 px-4 border-b font-bold text-center">${index + 1}</td>
-                            <td class="py-2 px-4 border-b">${items[index]}</td>
-                            <td class="py-2 px-4 border-b text-center font-bold text-red-600">${val}</td>
+                        <tr class="bg-slate-100 border-b-2 border-slate-200">
+                            <td colspan="3" class="py-2 px-4 font-bold text-prisma uppercase text-sm tracking-wider">
+                                ${domainName} <span class="ml-2 bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs">${critInDomain}/${domainData.items.length}</span>
+                            </td>
                         </tr>`;
+                    critBody.innerHTML += domainHTML;
                 }
-            });
-            if(!hasCritical) {
-                critBody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-slate-500">Nessun item critico rilevato (nessun punteggio ≥ 3).</td></tr>`;
             }
 
-            // Grafici
-            const labels = Object.keys(finalScores).map(d => d.split(' ')[1].replace(/[()]/g, '')); // Solo sigle
-            const dataScores = Object.values(finalScores);
+            if(totalCritical === 0) {
+                critBody.innerHTML = `<tr><td colspan="3" class="py-8 text-center text-slate-500 italic">Nessun item critico rilevato nel protocollo.</td></tr>`;
+            }
 
-            if (radarChartInstance) radarChartInstance.destroy();
-            const ctxRadar = document.getElementById('radarChart').getContext('2d');
-            radarChartInstance = new Chart(ctxRadar, {
-                type: 'radar',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Punteggio Medio',
-                        data: dataScores,
-                        backgroundColor: 'rgba(44, 62, 80, 0.2)',
-                        borderColor: 'rgba(44, 62, 80, 1)',
-                        pointBackgroundColor: '#2c3e50',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    animation: false,
-                    scales: { r: { min: 0, max: 4, ticks: { stepSize: 1 } } },
-                    plugins: { legend: { display: false } }
-                }
-            });
+            // 3. GRAFICO AVANZATO CON RANGE GRAFICO
+            const labels = Object.keys(finalScores);
+            labels.push("GSI"); // Aggiungi GSI al grafico
+            
+            const scoresData = labels.map(l => l === "GSI" ? gsiScore : finalScores[l].score);
+            
+            // Dati per i limiti (Standard Deviation shading)
+            const genMeanSD_Upper = labels.map(l => normativeData[l].genMean + normativeData[l].genSd);
+            const genMeanSD_Lower = labels.map(l => Math.max(0, normativeData[l].genMean - normativeData[l].genSd));
+            const psyMean = labels.map(l => normativeData[l].psyMean);
 
             if (barChartInstance) barChartInstance.destroy();
             const ctxBar = document.getElementById('barChart').getContext('2d');
+            
             barChartInstance = new Chart(ctxBar, {
                 type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [
                         {
+                            // Barra Punteggio Paziente
+                            label: 'Punteggio Paziente',
+                            data: scoresData,
+                            backgroundColor: '#2c3e50',
+                            borderRadius: 4,
+                            order: 1
+                        },
+                        {
+                            // Upper bound area normale (Linea invisibile usata per il Fill)
+                            label: 'Limite Sup. Normale',
+                            data: genMeanSD_Upper,
+                            borderColor: 'transparent',
+                            backgroundColor: 'rgba(134, 239, 172, 0.3)', // bg-green-300 con opacità
+                            pointRadius: 0,
                             type: 'line',
-                            label: 'Media Paziente (GSI)',
-                            data: Array(labels.length).fill(gsiScore),
-                            borderColor: 'red',
+                            fill: '+1', // Riempi fino al dataset successivo (Lower bound)
+                            order: 3,
+                            tension: 0
+                        },
+                        {
+                            // Lower bound area normale
+                            label: 'Limite Inf. Normale',
+                            data: genMeanSD_Lower,
+                            borderColor: 'transparent',
+                            pointRadius: 0,
+                            type: 'line',
+                            fill: false,
+                            order: 4,
+                            tension: 0
+                        },
+                        {
+                            // Linea Pazienti Psichiatrici (Media)
+                            label: 'Media Psichiatrica',
+                            data: psyMean,
+                            borderColor: '#ef4444', // red-500
                             borderWidth: 2,
                             borderDash: [5, 5],
                             pointRadius: 0,
-                            fill: false
-                        },
-                        {
-                            type: 'bar',
-                            label: 'Punteggi',
-                            data: dataScores,
-                            backgroundColor: '#2c3e50'
+                            type: 'line',
+                            fill: false,
+                            order: 2,
+                            tension: 0.1
                         }
                     ]
                 },
                 options: {
                     animation: false,
-                    scales: { y: { min: 0, max: 4 } },
-                    plugins: { legend: { position: 'bottom' } }
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { 
+                        y: { 
+                            min: 0, max: 4,
+                            title: { display: true, text: 'Intensità Sintomatica' }
+                        },
+                        x: {
+                            ticks: { font: { weight: 'bold' } }
+                        }
+                    },
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom',
+                            labels: {
+                                // Nascondi i dataset finti usati per l'ombreggiatura
+                                filter: function(item, chart) {
+                                    return item.text === 'Punteggio Paziente' || item.text === 'Media Psichiatrica';
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if(context.datasetIndex === 1 || context.datasetIndex === 2) return null; // no tooltip per le linee di fill
+                                    return context.dataset.label + ': ' + context.raw.toFixed(2);
+                                }
+                            }
+                        }
+                    }
                 }
             });
         }
 
-        // ESORTAZIONE PDF
+        // ESPORTAZIONE PDF
         window.jsPDF = window.jspdf.jsPDF;
 
         function exportClinicalReport() {
             const doc = new jsPDF();
             const pName = document.getElementById('patientName').value || "Anonimo";
             const pDate = document.getElementById('testDate').value;
+            const formattedDate = new Date(pDate).toLocaleDateString('it-IT');
+            const fmtNorm = (mean, sd) => `${mean.toFixed(2)} ± ${sd.toFixed(2)}`;
             
             // Intestazione
             doc.setFontSize(16);
@@ -417,63 +518,101 @@
             doc.text("Centro di psicoterapia - Prisma (Lecce)", 14, 20);
             doc.setFontSize(12);
             doc.setTextColor(100);
-            doc.text(`Relazione Clinica SCL-90 - Paziente: ${pName} - Data: ${pDate}`, 14, 28);
+            doc.text(`Relazione Clinica SCL-90 - Paziente: ${pName} - Data: ${formattedDate}`, 14, 28);
             doc.line(14, 32, 196, 32);
 
-            // Tabella Score
-            const tableData = Object.entries(finalScores).map(([dom, score]) => [dom, score.toFixed(2)]);
-            tableData.push(['Global Severity Index (GSI)', gsiScore.toFixed(2)]);
+            // Tabella Score Dettagliata
+            const tableData = Object.entries(finalScores).map(([sigla, data]) => [
+                data.name,
+                data.score.toFixed(2),
+                fmtNorm(normativeData[sigla].genMean, normativeData[sigla].genSd),
+                fmtNorm(normativeData[sigla].psyMean, normativeData[sigla].psySd)
+            ]);
+            
+            // Push GSI
+            tableData.push([
+                'Global Severity Index (GSI)',
+                gsiScore.toFixed(2),
+                fmtNorm(normativeData['GSI'].genMean, normativeData['GSI'].genSd),
+                fmtNorm(normativeData['GSI'].psyMean, normativeData['GSI'].psySd)
+            ]);
 
             doc.autoTable({
                 startY: 38,
-                head: [['Dominio Sintomatologico', 'Punteggio Medio']],
+                head: [['Scala Sintomatologica', 'Pz. Grezzo', 'Pop. Gen. (Med±DS)', 'Paz. Psi. (Med±DS)']],
                 body: tableData,
                 theme: 'grid',
                 headStyles: { fillColor: [44, 62, 80] },
-                margin: { top: 10 }
+                columnStyles: { 
+                    0: { cellWidth: 55 },
+                    1: { halign: 'center', fontStyle: 'bold' },
+                    2: { halign: 'center' },
+                    3: { halign: 'center' }
+                },
+                willDrawCell: function(data) {
+                    // Evidenzia GSI riga finale
+                    if(data.row.index === tableData.length - 1 && data.section === 'body') {
+                        doc.setFillColor(44, 62, 80);
+                        doc.setTextColor(255, 255, 255);
+                    }
+                }
             });
 
-            // Grafici (cattura nativa Canvas a Base64)
-            let currentY = doc.lastAutoTable.finalY + 10;
+            let currentY = doc.lastAutoTable.finalY + 15;
             
-            const radarImg = document.getElementById('radarChart').toDataURL('image/png', 1.0);
-            const barImg = document.getElementById('barChart').toDataURL('image/png', 1.0);
+            // Grafico (Full Width)
+            const tempBarCanvas = document.createElement('canvas');
+            const barChartCanvas = document.getElementById('barChart');
+            tempBarCanvas.width = barChartCanvas.width;
+            tempBarCanvas.height = barChartCanvas.height;
+            const ctxBar = tempBarCanvas.getContext('2d');
+            ctxBar.fillStyle = 'white';
+            ctxBar.fillRect(0, 0, tempBarCanvas.width, tempBarCanvas.height);
+            ctxBar.drawImage(barChartCanvas, 0, 0);
+            const barImg = tempBarCanvas.toDataURL('image/png', 1.0);
             
-            // Controllo spazio per i grafici
-            if (currentY > 150) {
+            // Controllo spazio
+            if (currentY > 180) {
                 doc.addPage();
                 currentY = 20;
             }
 
             doc.setFontSize(12);
             doc.setTextColor(44, 62, 80);
-            doc.text("Profilo Dimensionale", 14, currentY);
-            doc.addImage(radarImg, 'PNG', 14, currentY + 5, 80, 80);
-            
-            doc.text("Punteggi vs Media", 105, currentY);
-            doc.addImage(barImg, 'PNG', 105, currentY + 15, 90, 45);
+            doc.text("Profilo Dimensionale vs Range Normativi", 14, currentY);
+            // Inserisci grafico bello largo
+            doc.addImage(barImg, 'PNG', 14, currentY + 5, 180, 80);
 
-            // Item Critici
+            // Item Critici Raggruppati
             currentY += 95;
+            
             const criticalData = [];
-            responses.forEach((val, i) => {
-                if(val >= 3) criticalData.push([i+1, items[i], val]);
-            });
-
-            if(criticalData.length > 0) {
-                doc.autoTable({
-                    startY: currentY,
-                    head: [['N°', 'Item Critico (Punteggio >= 3)', 'Valore']],
-                    body: criticalData,
-                    theme: 'grid',
-                    headStyles: { fillColor: [220, 38, 38] }, // Rosso per critici
-                    styles: { cellWidth: 'wrap' },
-                    columnStyles: { 0: {cellWidth: 15}, 2: {cellWidth: 20} }
+            for (const [domainName, domainData] of Object.entries(domains)) {
+                let itemsInDom = [];
+                domainData.items.forEach(qNum => {
+                    let val = responses[qNum - 1];
+                    if (val >= 3) itemsInDom.push([qNum.toString(), items[qNum - 1], val.toString()]);
                 });
-            } else {
-                doc.setFontSize(10);
-                doc.text("Nessun item critico rilevato.", 14, currentY + 10);
+
+                if (itemsInDom.length > 0) {
+                    // Riga intestazione Dominio
+                    criticalData.push([{ content: `${domainName} (${itemsInDom.length}/${domainData.items.length})`, colSpan: 3, styles: { fillColor: [241, 245, 249], textColor: [44, 62, 80], fontStyle: 'bold' } }]);
+                    // Righe item
+                    itemsInDom.forEach(row => criticalData.push(row));
+                }
             }
+
+            doc.autoTable({
+                startY: currentY,
+                head: [['Item', 'Sintomo Rilevato (Valore >= 3)', 'Punteggio']],
+                body: criticalData.length > 0 ? criticalData : [['', 'Nessun item critico rilevato', '']],
+                theme: 'grid',
+                headStyles: { fillColor: [220, 38, 38] },
+                columnStyles: { 
+                    0: {cellWidth: 15, halign: 'center', fontStyle: 'bold', textColor: [100,100,100]}, 
+                    2: {cellWidth: 25, halign: 'center', fontStyle: 'bold', textColor: [220, 38, 38]} 
+                }
+            });
 
             doc.save(`SCL90_Relazione_${pName.replace(/\s+/g, '_')}.pdf`);
         }
@@ -482,14 +621,14 @@
             const doc = new jsPDF();
             const pName = document.getElementById('patientName').value || "Anonimo";
             const pDate = document.getElementById('testDate').value;
+            const formattedDate = new Date(pDate).toLocaleDateString('it-IT');
             
-            // Intestazione
             doc.setFontSize(16);
             doc.setTextColor(44, 62, 80);
             doc.text("Centro di psicoterapia - Prisma (Lecce)", 14, 20);
             doc.setFontSize(12);
             doc.setTextColor(100);
-            doc.text(`Protocollo Risposte SCL-90 - Paziente: ${pName} - Data: ${pDate}`, 14, 28);
+            doc.text(`Protocollo Risposte SCL-90 - Paziente: ${pName} - Data: ${formattedDate}`, 14, 28);
             
             const protocolData = responses.map((val, index) => [
                 index + 1,
@@ -506,7 +645,7 @@
                 columnStyles: { 0: {cellWidth: 15}, 2: {cellWidth: 25, fontStyle: 'bold', halign: 'center'} }
             });
 
-            doc.save(`SCL90_Protocollo_${pName.replace(/\s+/g, '_')}.pdf`);
+            doc.save(`SCL90_Risposte_${pName.replace(/\s+/g, '_')}.pdf`);
         }
     </script>
 </body>
