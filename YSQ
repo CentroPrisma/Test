@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>YSQ-S3 | Centro di psicoterapia Prisma</title>
+    
+    <!-- Tailwind CSS per il design responsivo e veloce -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js per i grafici -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- jsPDF e plugin Autotable per tabelle multi-pagina perfette -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        prisma: {
+                            DEFAULT: '#2c3e50',
+                            light: '#3e5771',
+                            dark: '#1a252f'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Regole CSS personalizzate per migliorare l'esperienza su iPad */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f8fafc;
+        }
+        
+        .option-btn {
+            transition: all 0.2s ease-in-out;
+            min-height: 60px;
+        }
+        
+        .option-btn.selected {
+            background-color: #2c3e50;
+            color: white;
+            border-color: #2c3e50;
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .card-shadow {
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        /* Nascondi scrollbar ma mantieni lo scorrimento per schermi piccoli */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .hidden-section {
+            display: none;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased font-sans">
+
+    <!-- Intestazione -->
+    <header class="bg-prisma text-white shadow-md">
+        <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold tracking-wide">Centro di psicoterapia - Prisma</h1>
+            <span class="text-sm md:text-lg opacity-90 font-light">Lecce</span>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        
+        <!-- SEZIONE 1: Dati Paziente -->
+        <section id="patient-data-section" class="bg-white rounded-xl p-8 card-shadow border border-slate-100 mb-8">
+            <h2 class="text-2xl font-semibold text-prisma mb-6 border-b pb-2">Questionario YSQ-S3 (90 item)</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Nome e Cognome (o Codice)</label>
+                    <input type="text" id="patient-name" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-prisma focus:border-prisma outline-none text-lg" placeholder="Inserisci identificativo...">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-2">Età</label>
+                        <input type="number" id="patient-age" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-prisma focus:border-prisma outline-none text-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-2">Data</label>
+                        <input type="date" id="test-date" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-prisma focus:border-prisma outline-none text-lg">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 text-blue-900 p-6 rounded-lg text-sm md:text-base leading-relaxed">
+                <h3 class="font-bold mb-2">Istruzioni:</h3>
+                <p>Di seguito è presentata una serie di affermazioni con cui è possibile descrivere se stessi. Per ogni singola affermazione indichi quanto accuratamente la descrive <strong>nell'ultimo anno</strong>.</p>
+                <p class="mt-2">Quando non si sente sicura/o, basi la sua risposta su cosa sente a livello emotivo e non su ciò che pensa possa essere giusto o sbagliato in generale.</p>
+            </div>
+        </section>
+
+        <!-- SEZIONE 2: Il Test (Domande) -->
+        <section id="test-section">
+            
+            <!-- Legenda Fissa (Sticky) ultra-compatta -->
+            <div class="bg-white/90 backdrop-blur-md rounded-lg py-2 px-4 shadow-sm mb-6 sticky top-2 z-40 border border-slate-200">
+                <div class="flex justify-between gap-x-4 text-[11px] md:text-xs text-slate-600 overflow-x-auto hide-scrollbar w-full">
+                    <span class="whitespace-nowrap"><strong class="text-prisma text-sm">1</strong> Completamente falso</span>
+                    <span class="whitespace-nowrap"><strong class="text-prisma text-sm">2</strong> Quasi del tutto falso</span>
+                    <span class="whitespace-nowrap"><strong class="text-prisma text-sm">3</strong> Più vero che falso</span>
+                    <span class="whitespace-nowrap"><strong class="text-prisma text-sm">4</strong> Abbastanza vero</span>
+                    <span class="whitespace-nowrap"><strong class="text-prisma text-sm">5</strong> Quasi del tutto vero</span>
+                    <span class="whitespace-nowrap"><strong class="text-prisma text-sm">6</strong> Mi descrive perfettamente</span>
+                </div>
+            </div>
+
+            <!-- Contenitore delle schede -->
+            <div id="questions-container" class="space-y-6"></div>
+
+            <div class="mt-8 flex justify-center items-center bg-white p-4 rounded-xl card-shadow">
+                <button id="btn-submit" onclick="submitTest()" class="px-8 py-4 bg-green-600 text-white text-xl font-bold rounded-lg hover:bg-green-700 transition shadow-lg w-full md:w-auto">
+                    Concludi e Calcola
+                </button>
+            </div>
+            
+            <p id="error-message" class="text-red-500 font-bold text-center mt-4 hidden">Rispondi a tutte le domande prima di proseguire.</p>
+        </section>
+
+        <!-- SEZIONE 3: Risultati e PDF -->
+        <section id="results-section" class="hidden-section space-y-8">
+            <div class="bg-white rounded-xl p-8 card-shadow text-center">
+                <h2 class="text-3xl font-bold text-prisma mb-4">Test Completato</h2>
+                <p class="text-slate-600 mb-8">I risultati sono stati elaborati. Utilizza i pulsanti sottostanti per generare i documenti clinici.</p>
+                
+                <div class="flex flex-col md:flex-row justify-center gap-4">
+                    <button onclick="generateClinicalPDF(event)" class="bg-prisma hover:bg-prisma-light text-white font-bold py-4 px-8 rounded-lg shadow-lg flex items-center justify-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Scarica Relazione Clinica (PDF)
+                    </button>
+                    <button onclick="generateProtocolPDF()" class="bg-white border-2 border-prisma text-prisma hover:bg-slate-50 font-bold py-4 px-8 rounded-lg shadow-sm flex items-center justify-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        Scarica Protocollo Risposte (PDF)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Questo blocco è per l'anteprima web -->
+            <div id="clinical-report-content" class="bg-white rounded-xl p-8 card-shadow space-y-12">
+                
+                <!-- Parte 1: Grafico e Punteggi Grezzi -->
+                <div>
+                    <h3 class="text-2xl font-bold border-b border-slate-200 text-prisma pb-4 mb-6">Profilo Schemi</h3>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                        <!-- Tabella Base -->
+                        <div id="scoring-table-container"></div>
+                        <!-- Grafico a Barre -->
+                        <div class="w-full bg-white rounded-lg border border-slate-200 p-4">
+                            <canvas id="schemaChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parte 3: Item Critici -->
+                <div>
+                    <h3 class="text-xl font-bold border-b border-slate-200 text-prisma pb-4 mb-6">Item Critici (Risposte 5 o 6)</h3>
+                    <p class="text-sm text-slate-500 mb-4">Di seguito sono elencate le domande specifiche a cui il paziente ha attribuito il punteggio massimo (Quasi del tutto vero / Mi descrive perfettamente), utili per l'approfondimento clinico.</p>
+                    <div id="critical-items-container"></div>
+                </div>
+
+            </div>
+            
+            <button onclick="location.reload()" class="w-full text-slate-400 hover:text-slate-600 underline text-sm mt-8">
+                Reset e Torna alla Home
+            </button>
+        </section>
+
+    </main>
+
+    <script>
+        const items = [
+            "1. Non ho avuto qualcuno che si prendesse cura di me, che mi rendesse partecipe della propria vita o avesse veramente a cuore tutto ciò che mi accade",
+            "2. Mi reputo \"appiccicoso/a\" nei confronti di coloro a cui tengo perché temo che possano abbandonarmi",
+            "3. Sento che gli altri approfitteranno di me",
+            "4. Non mi sento socialmente adeguato",
+            "5. Nessun uomo/donna che desidero potrebbe amarmi dopo aver visto i miei difetti o le mie debolezze",
+            "6. Quasi nulla di quello che faccio al lavoro (o nello studio) va bene quanto ciò che sanno fare gli altri",
+            "7. Non mi sento in grado di cavarmela da solo/a nella vita di tutti i giorni",
+            "8. Non riesco a liberarmi dalla sensazione che qualcosa di brutto stia per accadere",
+            "9. Non sono riuscito a separarmi dai miei genitori come sembrano fare le altre persone della mia età",
+            "10. Penso che se facessi quello che voglio mi metterei solo nei guai",
+            "11. Sono quello che solitamente finisce con il prendersi cura delle persone care",
+            "12. Sono troppo controllato per mostrare agli altri i miei sentimenti positivi verso di loro",
+            "13. Devo essere il/la migliore nella maggior parte delle cose che faccio; non accetto di essere secondo/a a nessuno",
+            "14. Ho molti problemi ad accettare un \"no\" come risposta quando voglio qualcosa dagli altri",
+            "15. Sembra che non riesca ad impormi la disciplina necessaria per portare a termine compiti routinari e noiosi",
+            "16. Avere soldi e conoscere persone importanti mi fa sentire di valore",
+            "17. Anche quando le cose sembrano andare bene, sento che sarà solo per poco",
+            "18. Se commetto un errore, merito di essere punito",
+            "19. Non ho nessuno che mi dia calore, sostegno e affetto",
+            "20. Ho talmente bisogno degli altri da temere di perderli",
+            "21. Sento di non poter abbassare la guardia in presenza degli altri, perché altrimenti mi ferirebbero intenzionalmente",
+            "22. Sono radicalmente diverso/a dagli altri",
+            "23. Nessun uomo/donna che desidero vorrebbe starmi vicino, se mi conoscesse realmente",
+            "24. Sono incapace nel raggiungimento degli obiettivi",
+            "25. Mi ritengo una persona dipendente dagli altri per quanto riguarda lo svolgimento delle attività quotidiane",
+            "26. Sento che, in qualunque momento potrebbe colpirmi un disastro (naturale, criminale, finanziario o medico)",
+            "27. Io e i miei genitori tendiamo ad essere troppo coinvolti nelle vite e nei problemi reciproci",
+            "28. Sento di non avere altra scelta se non cedere alle richieste degli altri, altrimenti essi si vendicheranno, arrabbieranno o mi respingeranno in qualche modo",
+            "29. Sono una brava persona perché penso agli altri più che a me stesso/a",
+            "30. Trovo imbarazzante esprimere i miei sentimenti agli altri",
+            "31. Cerco sempre di fare del mio meglio, non mi accontento di fare abbastanza",
+            "32. Sono speciale e non dovrei accettare molti dei divieti o delle restrizioni imposte dagli altri",
+            "33. Se non riesco a raggiungere un obiettivo, divento facilmente frustrato/a e mi tiro indietro",
+            "34. Il raggiungimento di un risultato assume maggior valore per me se gli altri lo notano",
+            "35. Se qualcosa di bello accade, mi preoccupo perché è probabile che sia seguito da qualcosa di brutto",
+            "36. Se non faccio del mio meglio, devo aspettarmi di fallire",
+            "37. Non ho sentito di essere speciale per qualcuno",
+            "38. Temo che le persone a me care possano lasciarmi o abbandonarmi",
+            "39. È soltanto una questione di tempo ma prima o poi tutti mi tradiscono",
+            "40. Non ho un senso di appartenenza, sono un solitario/a",
+            "41. Non merito l'amore, l'attenzione e il rispetto degli altri",
+            "42. La maggior parte delle persone è più competente di me nella sfera lavorativa e nel raggiungere le proprie mete",
+            "43. Mi manca il buon senso",
+            "44. Mi preoccupo del fatto di poter essere aggredito fisicamente",
+            "45. È molto difficile, fra me e i miei genitori, mantenere il riservo sui dettagli intimi della nostra vita senza sentirci traditi o in colpa",
+            "46. Nelle relazioni, solitamente permetto alle altre persone di avere la meglio",
+            "47. Sono cosi impegnato ad occuparmi delle persone a cui tengo, da avere poco tempo per me stesso/a",
+            "48. Trovo difficile essere uno spirito libero e spontaneo/a quando ho attorno altre persone",
+            "49. Devo assumermi tutte le mie responsabilità",
+            "50. Odio essere limitato/a o bloccato nel fare ciò che voglio",
+            "51. Faccio molta fatica a sacrificare il piacere o la gratificazione immediati per raggiungere un obiettivo a lungo termine",
+            "52. A meno che non riceva molte attenzioni da parte degli altri, non mi sento importante",
+            "53. Per quanto prudenti si possa essere, c'è sempre qualcosa che andrà male",
+            "54. Se non faccio bene qualcosa, ne devo pagare le conseguenze",
+            "55. Nessuno mi ha mai realmente ascoltato, capito, o è stato in sintonia con i miei reali bisogni ed emozioni",
+            "56. Quando qualcuno a cui tengo si allontana o si distacca da me, mi sento disperato",
+            "57. Sono abbastanza sospettoso/a sulle reali intenzioni degli altri",
+            "58. Mi sento alienato/a o escluso/a dagli altri",
+            "59. Sento di non essere amabile",
+            "60. Non ho il talento di cui è dotata la maggior parte delle persone sul lavoro",
+            "61. Nella vita di tutti i giorni, non si può fare affidamento sul mio parere",
+            "62. Ho paura di perdere tutti i soldi e finire in rovina",
+            "63. Spesso mi sento come se i miei genitori si appoggiassero a me ed io non avessi una vita mia",
+            "64. Ho sempre permesso agli altri di fare le scelte al posto mio, perciò non so veramente cosa voglio per me stesso/a",
+            "65. Sono sempre stato/a quello/a che ascolta i problemi degli altri",
+            "66. Sono talmente controllato che molte persone mi reputano freddo e insensibile",
+            "67. Sento una costante pressione a portare a termine a miei obiettivi e a non lasciare nulla in sospeso",
+            "68. Sento che non dovrei sottostare alle normali regole e convenzioni come invece fanno gli altri",
+            "69. Non riesco ad costringermi a fare ciò che non mi piace, anche quando so che è per il mio stesso bene",
+            "70. Se intervengo ad un incontro o sono introdotto in una situazione sociale, è importante per me ottenere riconoscimento ed ammirazione",
+            "71. Indipendentemente dai miei sforzi sul lavoro, mi preoccupo di poter essere rovinato finanziariamente e di perdere quasi tutto ciò che possiedo",
+            "72. Indipendentemente dalla ragione per cui ho sbagliato, una volta commesso un errore, dovrei pagarne le conseguenze",
+            "73. Nei momenti di incertezza, non ho avuto accanto una persona forte o di buon senso per darmi delle indicazioni o dei consigli utili",
+            "74. Qualche volta sono così preoccupato/a di essere lasciato/a da qualcuno che lo allontano io stesso/a",
+            "75. Spesso mi interrogo e rifletto per cercare di scoprire le motivazioni nascoste e i secondi fini delle altre persone",
+            "76. Mi sento sempre al di fuori dei gruppi",
+            "77. Sono troppo inaccettabile per rivelarmi agli altri o per permettere che mi conoscano a fondo",
+            "78. Nel lavoro e nello studio, non sono intelligente quanto la maggior parte delle persone",
+            "79. Non mi sento sicuro/a della mia capacità di risolvere i problemi di tutti i giorni",
+            "80. Temo di stare sviluppando una malattia grave anche se non mi è stato diagnosticato nulla del genere da nessun medico",
+            "81. Spesso sento di non avere un'identità separata da quella dei miei genitori o del mio partner",
+            "82. Ho molti problemi a chiedere che i miei diritti vengano rispettati e le mie emozioni siano prese in considerazione",
+            "83. Le altre persone mi vedono come qualcuno che fa troppo per gli altri e non abbastanza per se stesso/a",
+            "84. Nella sfera emotiva, le persone mi giudicano rigido",
+            "85. Non riesco facilmente a tirarmi fuori dai guai o a trovare scuse per i miei errori",
+            "86. Sento che quello che ho da offrire io è di maggior valore rispetto al contributo degli altri",
+            "87. Raramente sono stato capace di mantenere una condotta coerente con le mie decisioni",
+            "88. Ricevere molti elogi e complimenti mi fa sentire una persona di valore",
+            "89. Mi preoccupo del fatto che una decisione sbagliata possa portare ad un disastro",
+            "90. Sono una persona cattiva che merita di essere punita"
+        ];
+
+        const schemaNames = [
+            "Deprivazione Emotiva", "Abbandono", "Sfiducia / Abuso", "Isolamento Sociale", 
+            "Inadeguatezza / Vergogna", "Fallimento", "Dipendenza / Incompetenza", "Vulnerabilità", 
+            "Invischiamento", "Sottomissione", "Autosacrificio", "Inibizione Emotiva", 
+            "Standard Elevati", "Grandiosità", "Autocontrollo Insufficiente", "Ricerca di Approvazione", 
+            "Pessimismo", "Punizione"
+        ];
+
+        const domains = [
+            { name: "Distacco e Rifiuto", schemas: [0, 1, 2, 3, 4] },
+            { name: "Autonomia e Comp. Compromesse", schemas: [5, 6, 7, 8] },
+            { name: "Limiti Compromessi", schemas: [13, 14] },
+            { name: "Orientamento Verso gli Altri", schemas: [9, 10, 15] },
+            { name: "Ipervigilanza e Inibizione", schemas: [11, 12, 16, 17] }
+        ];
+
+        const answers = new Array(90).fill(null);
+        let patientData = { name: '', age: '', date: '' };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('test-date').valueAsDate = new Date();
+            renderPage();
+        });
+
+        function renderPage() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < items.length; i++) {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-xl p-5 md:p-8 card-shadow border border-slate-100";
+                
+                const questionText = document.createElement('h3');
+                questionText.className = "text-lg md:text-xl font-medium text-slate-800 mb-6";
+                questionText.textContent = items[i];
+                card.appendChild(questionText);
+
+                const btnContainer = document.createElement('div');
+                btnContainer.className = "grid grid-cols-6 gap-2";
+                
+                for (let v = 1; v <= 6; v++) {
+                    const btn = document.createElement('button');
+                    btn.className = `option-btn w-full rounded-lg border-2 border-slate-200 text-lg md:text-xl font-bold flex items-center justify-center text-slate-500 hover:border-prisma hover:text-prisma`;
+                    btn.textContent = v;
+                    
+                    if (answers[i] === v) {
+                        btn.classList.add('selected');
+                    }
+
+                    btn.onclick = () => selectAnswer(i, v, card);
+                    btnContainer.appendChild(btn);
+                }
+
+                card.appendChild(btnContainer);
+                container.appendChild(card);
+            }
+        }
+
+        function selectAnswer(itemIndex, value, cardElement) {
+            answers[itemIndex] = value;
+            const buttons = cardElement.querySelectorAll('.option-btn');
+            buttons.forEach(b => b.classList.remove('selected'));
+            buttons[value - 1].classList.add('selected');
+            document.getElementById('error-message').classList.add('hidden');
+        }
+
+        function submitTest() {
+            for (let i = 0; i < items.length; i++) {
+                if (answers[i] === null) {
+                    const errorMsg = document.getElementById('error-message');
+                    errorMsg.textContent = `Rispondi a tutte le domande prima di proseguire. (Mancano ${items.length - answers.filter(a => a !== null).length} risposte)`;
+                    errorMsg.classList.remove('hidden');
+                    
+                    const firstUnanswered = document.getElementById('questions-container').children[i];
+                    firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+
+            patientData.name = document.getElementById('patient-name').value || 'Anonimo';
+            patientData.age = document.getElementById('patient-age').value || '-';
+            patientData.date = document.getElementById('test-date').value;
+
+            document.getElementById('patient-data-section').classList.add('hidden-section');
+            document.getElementById('test-section').classList.add('hidden-section');
+            document.getElementById('results-section').classList.remove('hidden-section');
+            window.scrollTo(0, 0);
+
+            calculateAndRenderResults();
+        }
+
+        function calculateAndRenderResults() {
+            const schemaScores = new Array(18).fill(0);
+
+            for (let i = 0; i < answers.length; i++) {
+                const schemaIndex = i % 18;
+                schemaScores[schemaIndex] += answers[i];
+            }
+
+            const sum = schemaScores.reduce((a, b) => a + b, 0);
+            const mean = sum / schemaScores.length;
+
+            const orderedLabels = [];
+            const orderedScores = [];
+
+            // 1. RENDER TABELLA HTML WEB
+            let tableHTML = `
+                <div class="max-w-sm mx-auto bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead>
+                            <tr class="bg-prisma text-white">
+                                <th class="p-3 font-semibold">Schema e Dominio</th>
+                                <th class="p-3 font-semibold text-center w-24">Punteggio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            domains.forEach(domain => {
+                tableHTML += `
+                    <tr class="bg-slate-100 border-y border-slate-200">
+                        <td colspan="2" class="p-2 pl-3 font-bold text-slate-700 text-[11px] uppercase tracking-wider">${domain.name}</td>
+                    </tr>
+                `;
+                domain.schemas.forEach(idx => {
+                    orderedLabels.push(schemaNames[idx]);
+                    orderedScores.push(schemaScores[idx]);
+                    
+                    tableHTML += `
+                        <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                            <td class="p-2 pl-4 text-slate-700">${schemaNames[idx]}</td>
+                            <td class="p-2 text-center text-prisma font-bold">${schemaScores[idx]}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            tableHTML += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            document.getElementById('scoring-table-container').innerHTML = tableHTML;
+
+            // 2. RENDER GRAFICO WEB
+            const ctx = document.getElementById('schemaChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: orderedLabels,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: `Media Paziente (${mean.toFixed(1)})`,
+                            data: new Array(18).fill(mean),
+                            borderColor: '#e74c3c',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false,
+                            order: 1
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Punteggio',
+                            data: orderedScores,
+                            backgroundColor: 'rgba(44, 62, 80, 0.8)',
+                            borderColor: '#2c3e50',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            order: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    animation: false,
+                    scales: { 
+                        y: { beginAtZero: true, max: 30, ticks: { stepSize: 5 } },
+                        x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } }
+                    },
+                    plugins: { legend: { position: 'top' } },
+                    backgroundColor: 'white' // Forza lo sfondo bianco per il canvas
+                }
+            });
+
+            // 3. RENDER ITEM CRITICI WEB
+            let criticalItemsCount = 0;
+            let criticalItemsHTML = `
+                <table class="w-full text-left border-collapse border border-slate-200 text-sm">
+                    <thead>
+                        <tr class="bg-red-50 text-red-800">
+                            <th class="p-3 border-b border-red-200 w-16 text-center">Risp.</th>
+                            <th class="p-3 border-b border-red-200">Testo dell'Item</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            items.forEach((itemText, idx) => {
+                const score = answers[idx];
+                if (score === 5 || score === 6) {
+                    criticalItemsCount++;
+                    criticalItemsHTML += `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                            <td class="p-3 text-center font-bold text-red-600 align-top">${score}</td>
+                            <td class="p-3 text-slate-700 italic">${itemText}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            criticalItemsHTML += `</tbody></table>`;
+
+            if (criticalItemsCount === 0) {
+                document.getElementById('critical-items-container').innerHTML = `<p class="text-slate-500 italic p-4 bg-slate-50 rounded-lg">Nessun item ha ricevuto un punteggio di 5 o 6.</p>`;
+            } else {
+                document.getElementById('critical-items-container').innerHTML = criticalItemsHTML;
+            }
+        }
+
+        window.jsPDF = window.jspdf.jsPDF;
+
+        // PROTOCOLLO (Elenco di tutte le risposte)
+        function generateProtocolPDF() {
+            const doc = new jsPDF();
+            doc.setFontSize(18);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Centro di psicoterapia - Prisma | Lecce", 105, 20, { align: "center" });
+            doc.setFontSize(14);
+            doc.text("Protocollo Risposte YSQ-S3", 105, 30, { align: "center" });
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Paziente: ${patientData.name} | Età: ${patientData.age} | Data: ${patientData.date}`, 105, 40, { align: "center" });
+            doc.line(20, 45, 190, 45);
+            doc.setTextColor(0, 0, 0);
+            
+            let yPos = 55;
+            for (let i = 0; i < items.length; i++) {
+                if (yPos > 280) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                const textLines = doc.splitTextToSize(`${items[i]}`, 150);
+                doc.text(textLines, 20, yPos);
+                doc.setFont("helvetica", "bold");
+                doc.text(`[ ${answers[i]} ]`, 180, yPos);
+                doc.setFont("helvetica", "normal");
+                yPos += (textLines.length * 5) + 3;
+            }
+            doc.save(`Protocollo_YSQS3_${patientData.name.replace(/\s+/g, '_')}.pdf`);
+        }
+
+        // RELAZIONE CLINICA (NATIVA CON AUTOTABLE PER NON TAGLIARE IL TESTO)
+        function generateClinicalPDF(event) {
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            button.innerHTML = "Generazione in corso...";
+            
+            // Ricreiamo i dati necessari
+            const schemaScores = new Array(18).fill(0);
+            for (let i = 0; i < answers.length; i++) { schemaScores[i % 18] += answers[i]; }
+
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const margin = 15;
+            const pdfWidth = doc.internal.pageSize.getWidth();
+            
+            // Intestazione
+            doc.setFontSize(18);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Centro di psicoterapia - Prisma | Lecce", 105, 20, { align: "center" });
+            doc.setFontSize(14);
+            doc.text("Relazione Clinica - YSQ-S3", 105, 28, { align: "center" });
+            doc.setFontSize(11);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`Paziente: ${patientData.name}   |   Età: ${patientData.age}   |   Data: ${patientData.date}`, 105, 36, { align: "center" });
+            
+            let currentY = 45;
+
+            // 1. INSERIMENTO DEL GRAFICO COME IMMAGINE SCALATA
+            const chartCanvas = document.getElementById('schemaChart');
+            // Diamo a chart.js uno sfondo bianco forzato prima di fare lo screen
+            const ctxChart = chartCanvas.getContext('2d');
+            ctxChart.save();
+            ctxChart.globalCompositeOperation = 'destination-over';
+            ctxChart.fillStyle = 'white';
+            ctxChart.fillRect(0, 0, chartCanvas.width, chartCanvas.height);
+            const imgData = chartCanvas.toDataURL('image/png', 1.0);
+            ctxChart.restore();
+
+            const availableWidth = pdfWidth - (margin * 2);
+            const imgProps = doc.getImageProperties(imgData);
+            const imgHeight = (imgProps.height * availableWidth) / imgProps.width;
+            
+            doc.addImage(imgData, 'PNG', margin, currentY, availableWidth, imgHeight);
+            currentY += imgHeight + 10;
+
+            // 2. CREAZIONE TABELLA PUNTEGGI CON AUTOTABLE
+            const tableBody = [];
+            domains.forEach(domain => {
+                tableBody.push([{ 
+                    content: domain.name.toUpperCase(), 
+                    colSpan: 2, 
+                    styles: { fillColor: [241, 245, 249], textColor: [51, 65, 85], fontStyle: 'bold', fontSize: 9 } 
+                }]);
+                domain.schemas.forEach(idx => {
+                    tableBody.push([
+                        schemaNames[idx], 
+                        { content: schemaScores[idx].toString(), styles: { halign: 'center', fontStyle: 'bold', textColor: [44, 62, 80] } }
+                    ]);
+                });
+            });
+
+            doc.autoTable({
+                startY: currentY,
+                head: [['Schema Maladattivo e Dominio', 'Punteggio']],
+                body: tableBody,
+                theme: 'grid',
+                headStyles: { fillColor: [44, 62, 80], textColor: [255, 255, 255] },
+                columnStyles: { 1: { cellWidth: 30 } },
+                margin: { left: margin, right: margin }
+            });
+
+            currentY = doc.lastAutoTable.finalY + 15;
+
+            // 3. CREAZIONE TABELLA ITEM CRITICI CON AUTOTABLE (Così non vengono tagliati)
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Item Critici (Risposte 5 o 6)", margin, currentY);
+            currentY += 5;
+
+            const criticalBody = [];
+            items.forEach((itemText, idx) => {
+                const score = answers[idx];
+                if (score === 5 || score === 6) {
+                    criticalBody.push([
+                        { content: score.toString(), styles: { halign: 'center', fontStyle: 'bold', textColor: [220, 38, 38] } }, 
+                        { content: itemText, styles: { fontStyle: 'italic', textColor: [51, 65, 85] } }
+                    ]);
+                }
+            });
+
+            if (criticalBody.length > 0) {
+                doc.autoTable({
+                    startY: currentY,
+                    head: [['Risp.', 'Testo dell\'Item']],
+                    body: criticalBody,
+                    theme: 'grid',
+                    headStyles: { fillColor: [254, 226, 226], textColor: [153, 27, 27] }, // Colori rossi (Tailwind red-50, red-800)
+                    columnStyles: { 0: { cellWidth: 20 } },
+                    margin: { left: margin, right: margin },
+                    styles: { overflow: 'linebreak' },
+                    pageBreak: 'auto' // Questo previene magicamente il taglio delle righe a metà!
+                });
+            } else {
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text("Nessun item ha ricevuto un punteggio di 5 o 6.", margin, currentY + 5);
+            }
+
+            doc.save(`Relazione_Clinica_YSQS3_${patientData.name.replace(/\s+/g, '_')}.pdf`);
+            button.innerHTML = originalText;
+        }
+    </script>
+</body>
+</html>
