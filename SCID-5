@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SCID-5-SPQ | Centro di psicoterapia Prisma</title>
+    
+    <!-- Tailwind CSS per il design responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- jsPDF e plugin Autotable per tabelle multi-pagina perfette -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        prisma: {
+                            DEFAULT: '#2c3e50',
+                            light: '#3e5771',
+                            dark: '#1a252f'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f8fafc;
+        }
+        
+        .option-btn {
+            transition: all 0.2s ease-in-out;
+            min-height: 60px;
+        }
+        
+        .option-btn.selected-si {
+            background-color: #ef4444; /* Rosso per il SI (clinicamente rilevante) */
+            color: white;
+            border-color: #ef4444;
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .option-btn.selected-no {
+            background-color: #94a3b8; /* Grigio per il NO */
+            color: white;
+            border-color: #94a3b8;
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-shadow { box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .hidden-section { display: none; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased font-sans">
+
+    <!-- Intestazione -->
+    <header class="bg-prisma text-white shadow-md">
+        <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold tracking-wide">Centro di psicoterapia Prisma</h1>
+            <span class="text-sm md:text-lg opacity-90 font-light">USO CLINICO RISERVATO</span>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        
+        <!-- SEZIONE 1: Dati Paziente -->
+        <section id="patient-data-section" class="bg-white rounded-xl p-8 card-shadow border border-slate-100 mb-8">
+            <h2 class="text-2xl font-semibold text-prisma mb-2">Questionario SCID-5-SPQ</h2>
+            <p class="text-slate-500 mb-6 border-b pb-4">Screening della Personalità per l'Intervista Clinica del DSM-5®</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-2">Iniziali / Identificativo</label>
+                    <input type="text" id="patient-name" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-prisma outline-none text-lg" placeholder="Es. MR_01">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-2">Età</label>
+                        <input type="number" id="patient-age" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-prisma outline-none text-lg" placeholder="Anni">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-2">Data</label>
+                        <input type="date" id="test-date" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-prisma outline-none text-lg">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-blue-50 text-blue-900 p-6 rounded-lg text-sm md:text-base leading-relaxed">
+                <h3 class="font-bold mb-2">Istruzioni:</h3>
+                <p>Queste domande riguardano il tipo di persona che lei è solita essere; ossia, il modo in cui si è solitamente sentito/a o comportato/a <strong>durante la maggior parte degli ultimi anni</strong>.</p>
+                <p class="mt-2">Selezioni "SÌ" se la domanda è completamente o quasi del tutto valida per lei, oppure "NO" se la domanda non è valida per lei. Se non capisce una domanda, la preghiamo di non rispondere e parlarne con il clinico.</p>
+            </div>
+        </section>
+
+        <!-- SEZIONE 2: Il Test (Domande) -->
+        <section id="test-section">
+            <div id="questions-container" class="space-y-6"></div>
+
+            <div class="mt-8 flex justify-center items-center bg-white p-4 rounded-xl card-shadow">
+                <button id="btn-submit" onclick="submitTest()" class="px-8 py-4 bg-prisma text-white text-xl font-bold rounded-lg hover:bg-prisma-light transition shadow-lg w-full md:w-auto">
+                    Concludi e Calcola Risultati
+                </button>
+            </div>
+            
+            <p id="error-message" class="text-red-500 font-bold text-center mt-4 hidden">Rispondi a tutte le domande prima di proseguire.</p>
+        </section>
+
+        <!-- SEZIONE 3: Risultati e PDF -->
+        <section id="results-section" class="hidden-section space-y-8">
+            <div class="bg-white rounded-xl p-8 card-shadow text-center">
+                <h2 class="text-3xl font-bold text-prisma mb-4">Screening Completato</h2>
+                <p class="text-slate-600 mb-8">I punteggi sono stati calcolati secondo la griglia di correzione (Gragnani). Scarica i documenti clinici qui sotto.</p>
+                
+                <div class="flex flex-col md:flex-row justify-center gap-4 mb-8">
+                    <button onclick="generateClinicalPDF()" class="bg-prisma hover:bg-prisma-light text-white font-bold py-4 px-8 rounded-lg shadow-lg flex items-center justify-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Relazione Clinica + Traccia Intervista
+                    </button>
+                    <button onclick="generateProtocolPDF()" class="bg-white border-2 border-prisma text-prisma hover:bg-slate-50 font-bold py-4 px-8 rounded-lg shadow-sm flex items-center justify-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        Solo Protocollo Risposte
+                    </button>
+                </div>
+
+                <!-- Anteprima Tabella Web -->
+                <div id="scoring-table-container"></div>
+            </div>
+            
+            <button onclick="location.reload()" class="w-full text-slate-400 hover:text-slate-600 underline text-sm mt-8 pb-12">
+                Inizia un nuovo test
+            </button>
+        </section>
+
+    </main>
+
+    <script>
+        const items = [
+            "1. Ha evitato dei lavori o dei compiti che prevedevano che lei avesse a che fare con numerose persone?",
+            "2. Evita di fare amicizia con le persone, a meno di non essere sicuro/a di piacere loro?",
+            "3. Trova difficile essere \"aperto/a\", anche con persone con cui è in confidenza?",
+            "4. Si preoccupa spesso di venire criticato/a o rifiutato/a nelle situazioni sociali?",
+            "5. Di solito sta in silenzio quando incontra persone che non conosce?",
+            "6. Pensa di non essere abile, brillante o attraente come la maggior parte delle altre persone?",
+            "7. Ha paura di provare cose che potrebbero rappresentare una sfida o di provare qualsiasi cosa nuova?",
+            "8. È difficile per lei prendere decisioni quotidiane, per esempio, come vestirsi o cosa ordinare al ristorante, senza i consigli o le rassicurazioni degli altri?",
+            "9. Dipende dalle altre persone per gestire aree importanti della sua vita, come finanze, cura dei figli, o progetti di vita?",
+            "10. Trova difficile esprimere il suo disaccordo alle persone, anche quando pensa che stiano sbagliando?",
+            "11. Trova difficile iniziare dei progetti o fare le cose da solo/a?",
+            "12. Per lei è così importante che gli altri si prendano cura di lei da essere disposto/a a fare delle cose sgradevoli o irragionevoli per loro?",
+            "13. Di solito, si sente a disagio quando è da solo/a?",
+            "14. Quando una relazione stretta finisce, sente subito il bisogno di trovare qualcun altro che si prenda cura di lei?",
+            "15. Si preoccupa molto di essere lasciato/a da solo/a a badare a se stesso/a?",
+            "16. È il tipo di persona che si fissa sui dettagli, sull'ordine, e sull'organizzazione e che ama fare elenchi e programmi dettagliati?",
+            "17. Ha problemi a terminare le cose perché impiega troppo tempo nel cercare di farle perfettamente?",
+            "18. È molto dedito/a al suo lavoro o all'essere produttivo/a?",
+            "19. Ha dei parametri molto alti riguardo a ciò che è giusto e ciò che è sbagliato?",
+            "20. Ha dei problemi a buttare via le cose, perché, un giorno, potrebbero tornare utili?",
+            "21. È difficile per lei lavorare con altre persone, o chiedere agli altri di fare delle cose, a meno che non accettino di fare le cose esattamente nel modo in cui vuole lei?",
+            "22. È difficile per lei spendere del denaro per sé o per le altre persone?",
+            "23. Una volta che ha fatto dei progetti, per lei è difficile apportare dei cambiamenti?",
+            "24. Altre persone le hanno detto che è testardo/a?",
+            "25. Ha spesso la sensazione che le persone la stiano usando, danneggiando o che le stiano mentendo?",
+            "26. È una persona molto riservata, che raramente si confida con le altre persone?",
+            "27. Pensa che sia meglio fare in modo che le persone non sappiano troppo di lei perché potrebbero usarlo contro di lei?",
+            "28. Ha spesso la sensazione che le altre persone la stiano minacciando o insultando per via delle cose che dicono o fanno?",
+            "29. Lei è quel tipo di persona che porta rancore o impiega molto tempo per perdonare le persone che l'hanno insultata o offesa?",
+            "30. Ci sono molte persone che lei non può perdonare perché le hanno fatto o detto qualcosa molto tempo fa?",
+            "31. Spesso si arrabbia o attacca violentemente chi la critica o la insulta in qualche modo?",
+            "32. Ha sospettato spesso che il suo coniuge o partner le sia stato infedele?",
+            "33. Quando si trova in pubblico e vede delle persone che parlano, spesso pensa che stiano parlando di lei?",
+            "34. Quando è in mezzo alla gente, ha spesso la sensazione che la stiano osservando o fissando?",
+            "35. Ha spesso la sensazione che le parole di una canzone o qualcosa in un film o in TV abbiano un significato speciale rivolto a lei in particolare?",
+            "36. È una persona superstiziosa?",
+            "37. Ha mai ritenuto di poter fare avvenire delle cose semplicemente esprimendo un desiderio o pensandoci?",
+            "38. Ha avuto esperienze personali con il soprannaturale?",
+            "39. Ha un \"sesto senso\" che le consente di conoscere e predire gli eventi?",
+            "40. Ha spesso la sensazione che ogni cosa sia irreale, di essere staccato/a dal suo corpo o dalla sua mente, o di essere un osservatore/-trice esterno/a dei suoi pensieri o movimenti?",
+            "41. Vede spesso delle cose che le altre persone non vedono?",
+            "42. Sente spesso una voce pronunciare piano il suo nome?",
+            "43. Ha avuto la sensazione che una qualche persona o forza fosse vicino a lei, anche se non poteva vedere nessuno?",
+            "44. Ci sono pochissime persone con cui lei si sente in intimità all'esterno della cerchia dei suoi familiari più stretti?",
+            "45. Si sente spesso in apprensione quando è circondato da persone che non conosce bene?",
+            "46. Per lei NON è importante avere degli amici o delle relazioni sentimentali o far parte della sua famiglia?",
+            "47. Quasi sempre preferirebbe fare le cose da solo/a, piuttosto che con altre persone?",
+            "48. Ha poco o nessun interesse nell'avere esperienze sessuali con un'altra persona?",
+            "49. Ci sono davvero pochissime cose che le danno molto piacere?",
+            "50. Non le importa di ciò che la gente pensa di lei?",
+            "51. Raramente prova emozioni forti, come per esempio essere molto arrabbiato/a o sentirsi allegro/a?",
+            "52. Le piace essere al centro dell'attenzione?",
+            "53. Tende a giocare a sedurre molto?",
+            "54. Si trova spesso \"a provarci\" con le persone?",
+            "55. Cerca di attirare l'attenzione su di sé, grazie al suo modo di vestire o al suo aspetto fisico?",
+            "56. Tende a essere una persona molto teatrale nelle sue azioni e nel linguaggio?",
+            "57. È più emotivo/a della maggior parte delle persone, per esempio, singhiozza quando ascolta una storia triste?",
+            "58. Cambia spesso idea sulle cose in base alle persone con cui è o a quello che ha appena letto o visto in TV?",
+            "59. Pensa spesso che anche persone che forniscono un servizio, come il suo idraulico, il suo meccanico e il suo dottore, siano suoi buoni amici?",
+            "60. È più importante, più talentuoso/a o più di successo della maggior parte delle altre persone?",
+            "61. Le hanno detto che lei ha un'opinione troppo alta di sé?",
+            "62. Pensa molto al potere, al successo, o al riconoscimento che si aspetta che un giorno sarà suo?",
+            "63. Pensa spesso alla perfetta storia d'amore che un giorno vivrà?",
+            "64. Quando ha un problema insiste quasi sempre per contattare i massimi specialisti?",
+            "65. Cerca di passare il suo tempo solo con persone importanti o influenti?",
+            "66. Per lei è importante che la gente in qualche modo le presti attenzione o la ammiri?",
+            "67. Pensa di essere il tipo di persona che merita un trattamento di riguardo oppure pensa che le altre persone dovrebbero fare automaticamente quello che lei vuole?",
+            "68. Deve mettere spesso i suoi bisogni davanti a quelli delle altre persone?",
+            "69. Gli altri si sono lamentati del fatto che lei si approfitta delle persone?",
+            "70. Generalmente, ritiene che i bisogni o i sentimenti degli altri non siano davvero un suo problema?",
+            "71. Trova spesso che i problemi delle altre persone siano noiosi?",
+            "72. Le altre persone si sono lamentate del fatto che lei non le ascolta o non si interessa ai loro sentimenti?",
+            "73. Quando vede qualcuno che ha successo, ritiene che lei lo meriti più di lui/lei?",
+            "74. Pensa che gli altri siano spesso invidiosi di lei?",
+            "75. Pensa che ci siano pochissime persone che sono degne del suo tempo e della sua attenzione?",
+            "76. Le altre persone si sono lamentate del fatto che lei si comporta in modo troppo arrogante e prepotente?",
+            "77. Spesso si è agitato/a molto, quando ha pensato che qualcuno cui lei teneva davvero stesse per lasciarla?",
+            "78. Le relazioni con le persone cui tiene davvero hanno molti alti e bassi estremi?",
+            "79. Il suo senso di chi lei sia cambia spesso in modo radicale?",
+            "80. È diverso/a con persone diverse o in situazioni differenti, tanto che a volte non sa chi realmente sia?",
+            "81. Ci sono stati molti cambiamenti improvvisi nei suoi scopi, progetti di carriera, credenze religiose, e così via?",
+            "82. Ci sono stati molti cambiamenti improvvisi nella sua tipologia di amici o nella sua identità sessuale?",
+            "83. Ha fatto spesso delle cose impulsivamente?",
+            "84. Ha cercato di farsi del male o di uccidersi, oppure ha minacciato di farlo?",
+            "85. Si è mai tagliato/a, bruciato/a, o graffiato/a intenzionalmente?",
+            "86. Il suo umore cambia spesso nell'arco di un solo giorno, sulla base di quello che sta accadendo nella sua vita?",
+            "87. Avverte spesso un senso di vuoto interiore?",
+            "88. Le capita spesso di avere esplosioni di collera o di diventare così arrabbiato/a da perdere il controllo?",
+            "89. Quando si arrabbia, picchia le persone oppure scaglia degli oggetti?",
+            "90. La fanno arrabbiare molto anche cose da poco?",
+            "91. Quando si agita molto, diventa sospettoso/a verso gli altri o si sente distaccato/a dal suo corpo o sente che le cose sono irreali?",
+            "92. Prima dei 15 anni ha fatto il prepotente con, minacciato, o spaventato altri ragazzini?",
+            "93. Prima dei 15 anni ha dato inizio a scontri fisici?",
+            "94. Prima dei 15 anni ha ferito o minacciato qualcuno con un'arma, come un bastone, una pietra, una bottiglia rotta, un coltello o un'arma da fuoco?",
+            "95. Prima dei 15 anni ha fatto delle cose crudeli a qualcuno causandogli dolore fisico o sofferenza?",
+            "96. Prima dei 15 anni ha fatto del male, di proposito, a degli animali?",
+            "97. Prima dei 15 anni ha rubato, scippato o preso in modo violento qualcosa a qualcuno minacciandolo/la?",
+            "98. Prima dei 15 anni ha costretto qualcuno a fare qualcosa di sessuale?",
+            "99. Prima dei 15 anni ha appiccato dei fuochi?",
+            "100. Prima dei 15 anni ha danneggiato deliberatamente cose che non erano sue?",
+            "101. Prima dei 15 anni è entrato con la forza in una casa, in un altro edificio, o in un'automobile?",
+            "102. Prima dei 15 anni ha detto molte bugie o ha ingannato altre persone per ottenere qualcosa che voleva o per evitare di fare qualcosa?",
+            "103. Prima dei 15 anni ha rubato o compiuto furti o contraffatto la firma di qualcuno per denaro?",
+            "104. Prima dei 15 anni è scappato di casa, stando fuori tutta la notte?",
+            "105. Prima dei 13 anni stava spesso fuori fino a molto tardi, ben dopo l'ora in cui avrebbe dovuto essere a casa?",
+            "106. Prima dei 13 anni ha marinato spesso la scuola?"
+        ];
+
+        // DIZIONARIO DOMANDE INTERVISTA E CRITERI (SCID-5-PD)
+        // Compilati a titolo di esempio i primi 7 item (Disturbo Evitante)
+        // Per gli altri verrà generato uno spazio vuoto finché non vengono inseriti i testi esatti del manuale.
+        const interviewData = {
+            0: { // Item 1
+                q: "Ha evitato lavori o compiti che prevedevano che avesse a che fare con numerose persone?\n(Per esempio?)\n\n[Se sì:] Perché? Era perché temeva di essere criticato/a, o rifiutato/a, o che le persone la disapprovassero?",
+                c: "1. evita attività lavorative che implicano un significativo contatto interpersonale per timore di essere criticato/a, disapprovato/a o rifiutato/a."
+            },
+            1: { // Item 2
+                q: "Evita di farsi coinvolgere dalle persone a meno che non sia sicuro/a di piacere loro?\n\n(Mi faccia un esempio.)",
+                c: "2. è riluttante a entrare in relazione con persone a meno che non sia certo/a di piacere."
+            },
+            2: { // Item 3
+                q: "Trova difficile essere \"aperto/a\" anche con le persone con cui è in confidenza?\n\n(Perché? È per il timore di essere preso/a in giro o ridicolizzato/a?)",
+                c: "3. mostra limitazioni nelle relazioni intime per timore di essere umiliato/a o ridicolizzato/a."
+            },
+            3: { // Item 4
+                q: "Si preoccupa spesso di essere criticato/a o rifiutato/a nelle situazioni sociali?\n\n(Mi faccia un esempio. Quanto spesso le capita?)",
+                c: "4. è preoccupato/a di essere criticato/a o rifiutato/a in situazioni sociali."
+            },
+            4: { // Item 5
+                q: "Di solito è silenzioso/a quando incontra persone che non conosce?\n\n(Perché? È perché ha paura di dire la cosa sbagliata o di non sapere cosa dire?)",
+                c: "5. è inibito/a in situazioni interpersonali nuove per sentimenti di inadeguatezza."
+            },
+            5: { // Item 6
+                q: "Pensa di non essere abile, brillante o attraente come la maggior parte delle altre persone?\n\n(In che modo?)",
+                c: "6. si vede come socialmente inetto/a, personalmente non attraente o inferiore agli altri."
+            },
+            6: { // Item 7
+                q: "Ha paura di provare cose nuove?\n\n(Perché? È per il timore di fare qualcosa di imbarazzante?)",
+                c: "7. è insolitamente riluttante ad assumere rischi personali o a ingaggiarsi in qualsiasi nuova attività, poiché questo può rivelarsi imbarazzante."
+            },
+            7: { // Item 8 (Dipendente - Criterio 1)
+                q: "Ha bisogno di molti consigli o rassicurazioni da parte degli altri prima di poter prendere decisioni quotidiane, per esempio come vestirsi o cosa ordinare al ristorante?",
+                c: "1. ha difficoltà a prendere le decisioni quotidiane senza un'eccessiva quantità di consigli e rassicurazioni da parte degli altri."
+            },
+            8: { // Item 9 (Dipendente - Criterio 2)
+                q: "Dipende dalle altre persone per gestire le aree importanti della sua vita, come le finanze, la cura dei figli, o le sue condizioni abitative?",
+                c: "2. ha bisogno che altri si assumano la responsabilità per la maggior parte dei settori della sua vita."
+            },
+            9: { // Item 10 (Dipendente - Criterio 3)
+                q: "Trova difficile esprimere disaccordo verso gli altri?\n\n(Perché? È perché teme che si arrabbino con lei o che la rifiutino?)",
+                c: "3. ha difficoltà a esprimere disaccordo verso gli altri per il timore di perdere supporto o approvazione. (Nota: Non includere realistici timori di punizioni.)"
+            },
+            10: { // Item 11 (Dipendente - Criterio 4)
+                q: "Ha difficoltà a iniziare progetti o a fare cose per conto suo?\n\n(Mi faccia un esempio. È perché non ha fiducia in se stesso/a, o perché le mancano l'energia o la spinta per farlo?)",
+                c: "4. ha difficoltà a iniziare progetti o a fare cose autonomamente (per una mancanza di fiducia nel proprio giudizio o nelle proprie capacità piuttosto che per una mancanza di motivazione o di energia)."
+            },
+            11: { // Item 12 (Dipendente - Criterio 5)
+                q: "Si è mai offerto/a volontario/a per fare cose sgradevoli o irragionevoli per le persone, in modo che queste si prendessero cura di lei?",
+                c: "5. può giungere a qualsiasi cosa pur di ottenere accudimento e supporto da altri, fino al punto di offrirsi volontario/a per compiti spiacevoli."
+            },
+            12: { // Item 13 (Dipendente - Criterio 6)
+                q: "Di solito si sente a disagio o indifeso/a quando è da solo/a?\n\n(Come mai? È perché teme di non essere in grado di prendersi cura di sé?)",
+                c: "6. si sente a disagio o indifeso/a quando è solo/a a causa dell'esagerato timore di essere incapace di prendersi cura di sé."
+            },
+            13: { // Item 14 (Dipendente - Criterio 7)
+                q: "Quando finisce una relazione stretta, sente il bisogno di trovare disperatamente qualcun altro che si prenda cura di lei?",
+                c: "7. quando termina una relazione intima, cerca con urgenza un'altra relazione come fonte di accudimento e di supporto."
+            },
+            14: { // Item 15 (Dipendente - Criterio 8)
+                q: "Si preoccupa di venire lasciato/a da solo/a a prendersi cura di sé?\n\n(Ha qualche motivo reale per preoccuparsi di questo?)",
+                c: "8. è irrealisticamente preoccupato/a dal timore di essere lasciato/a a prendersi cura di sé."
+            },
+            15: { // Item 16 (Ossessivo-Compulsivo - Criterio 1)
+                q: "È il tipo di persona che si fissa sui dettagli, sull'ordine e sull'organizzazione, oppure ama fare elenchi o programmi dettagliati?\n\n(Mi faccia un esempio. Le capita mai che il suo perfezionismo intralci la sua capacità di portare a termine un compito?)",
+                c: "1. è preoccupato/a per i dettagli, le regole, le liste, l'ordine, l'organizzazione o i programmi, al punto che va perduto lo scopo principale dell'attività."
+            },
+            16: { // Item 17 (Ossessivo-Compulsivo - Criterio 2)
+                q: "Ha problemi a terminare le cose perché impiega molto tempo nel cercare di farle perfettamente?\n\n(Mi faccia un esempio.)",
+                c: "2. mostra un perfezionismo che interferisce con il completamento dei compiti (per es., è incapace di completare un progetto perché non risultano soddisfatti i suoi standard oltremodo rigidi)."
+            },
+            17: { // Item 18 (Ossessivo-Compulsivo - Criterio 3)
+                q: "È talmente dedito/a al lavoro e all'essere produttivo/a da non avere più tempo per i momenti di svago o da non riuscire a staccarsi dal lavoro per prendersi una vacanza?\n\n(Questo si spiega con la necessità di lavorare per sopravvivere economicamente?)",
+                c: "3. è eccessivamente dedito/a al lavoro e alla produttività, fino all'esclusione delle attività di svago e delle amicizie (non giustificati da evidenti necessità economiche)."
+            },
+            18: { // Item 19 (Ossessivo-Compulsivo - Criterio 4)
+                q: "Ha dei parametri molto alti in merito a ciò che è giusto o sbagliato, tanto che è per lei molto difficile transigere su questi aspetti?\n\n(La gente ritiene che lei sia troppo rigido/a rispetto alle regole sull'onestà e sull'etica?)\n\n[Valutare se i parametri sono esagerati per la cultura di origine e la religione del soggetto.]",
+                c: "4. è eccessivamente coscienzioso/a, scrupoloso/a e intransigente in tema di moralità, etica o valori (in modo non giustificato dall'appartenenza culturale o religiosa)."
+            },
+            19: { // Item 20 (Ossessivo-Compulsivo - Criterio 5)
+                q: "Ha problemi a buttare via le cose, perché un giorno, potrebbero tornare utili? Oppure ha problemi a buttare cose che non hanno più alcun valore, nemmeno sentimentale?\n\n(Mi faccia un esempio. Quante di queste cose ha conservato? Le ingombrano molto la casa?)",
+                c: "5. è incapace di gettare via oggetti consumati o di nessun valore, anche quando non hanno alcun significato affettivo."
+            },
+            20: { // Item 21 (Ossessivo-Compulsivo - Criterio 6)
+                q: "È difficile per lei lavorare con altre persone, o chiedere agli altri di fare delle cose, a meno che non accettino di fare le cose esattamente nel modo in cui vuole lei?\n\n(Perché?)",
+                c: "6. è riluttante a delegare compiti o a lavorare con altri, a meno che non si sottomettano esattamente al suo modo di fare le cose."
+            },
+            21: { // Item 22 (Ossessivo-Compulsivo - Criterio 7)
+                q: "È difficile per lei spendere il denaro per sé o per le altre persone, persino quando potrebbe permetterselo?\n\n[Se sì:] Perché? Crede che i soldi dovrebbero essere risparmiati nel caso capitasse qualcosa di catastrofico?",
+                c: "7. adotta una modalità di spesa improntata all'avarizia sia per sé che per gli altri; il denaro è visto come qualcosa da accumulare in vista di future catastrofi."
+            },
+            22: { // Item 23 (Ossessivo-Compulsivo - Criterio 8)
+                q: "Spesso si attiene talmente tanto a regole e procedure da non permettersi di agire in modo flessibile?\nOppure è spesso così tenacemente attaccato/a a un'opinione da non prendere in considerazione l'idea di poter cambiare posizione?\n\n(Mi faccia un esempio.)",
+                c: "8. manifesta rigidità e testardaggine."
+            },
+            23: { // Item 24 (Ossessivo-Compulsivo - Criterio 8 - Parte 2)
+                q: "Le persone le hanno spesso detto che è testardo/a?\n\n(Mi faccia un esempio.)",
+                c: "8. manifesta rigidità e testardaggine."
+            },
+            24: { // Item 25 (Paranoide - Criterio 1 e Criterio 2 integrato)
+                q: "Ha spesso avuto la sensazione che le persone la stessero usando, ingannando, o che le stessero mentendo, persino quando riteneva di non avere alcuna prova a riguardo?\n(Mi faccia un esempio.)\n\n[DA VALUTARE ANCHE IL CRITERIO 2:]\nPassa molto tempo a dubitare se può fidarsi dei suoi amici o dei suoi colleghi di lavoro?\n(Mi faccia un esempio. Questo è un problema costante?)",
+                c: "1. sospetta, senza fondamento, di essere sfruttato/a, danneggiato/a o ingannato/a dagli altri.\n\nValutazione Criterio 1:\n[ ? ]   [ 0 ]   [ 1 ]   [ 2 ]\n\n2. dubita, senza giustificazione, della lealtà o dell'affidabilità di amici o colleghi."
+            },
+            25: { // Item 26 (Paranoide - Criterio 3)
+                q: "È una persona molto riservata o è riluttante a confidarsi con gli altri?\n\n(Perché? È perché teme che le cose che dirà possano essere usate contro di lei?)",
+                c: "3. è riluttante a confidarsi con gli altri a causa del timore ingiustificato che le informazioni possano essere usate contro di lui/lei."
+            },
+            26: { // Item 27 (Paranoide - Criterio 3 - Parte 2)
+                q: "(Vedi domanda precedente per lo stesso criterio)\n\nPensa che sia meglio fare in modo che le persone non sappiano troppo di lei perché potrebbero usare le informazioni contro di lei?",
+                c: "3. è riluttante a confidarsi con gli altri a causa del timore ingiustificato che le informazioni possano essere usate contro di lui/lei."
+            },
+            27: { // Item 28 (Paranoide - Criterio 4)
+                q: "Ha spesso la sensazione che le altre persone la stiano minacciando o insultando per via delle cose che dicono o fanno?\n\n(Ad esempio, ritiene che un complimento contenga un insulto nascosto?)",
+                c: "4. scorge significati nascosti umilianti o minacciosi in osservazioni o eventi benevoli."
+            },
+            28: { // Item 29 (Paranoide - Criterio 5)
+                q: "È quel tipo di persona che porta rancore o impiega molto tempo per perdonare le persone che l'hanno insultata o offesa?\n\n(Mi faccia un esempio.)",
+                c: "5. porta costantemente rancore (cioè, è implacabile verso gli insulti, le ingiurie o le offese)."
+            },
+            29: { // Item 30 (Paranoide - Criterio 5 - Parte 2)
+                q: "Ci sono molte persone che non può perdonare perché le hanno fatto o detto qualcosa molto tempo fa?\n\n(Mi faccia un esempio.)",
+                c: "5. porta costantemente rancore (cioè, è implacabile verso gli insulti, le ingiurie o le offese)."
+            },
+            30: { // Item 31 (Paranoide - Criterio 6)
+                q: "Spesso si arrabbia o attacca verbalmente o fisicamente chi crede la stia criticando o insultando in qualche modo?\n\n(Mi faccia un esempio. Questo succede spesso? È la prima/il primo a colpire o fa solo in modo di difendersi?)",
+                c: "6. percepisce attacchi al proprio ruolo o reputazione non evidenti agli altri ed è pronto/a a reagire con rabbia o a contrattaccare."
+            },
+            31: { // Item 32 (Paranoide - Criterio 7)
+                q: "Ha spesso sospettato che il suo coniuge o il suo partner le fosse infedele?\n\n(Quante volte ha sospettato una cosa del genere? Che tipo di prove aveva?)",
+                c: "7. sospetta in modo ricorrente, senza giustificazione, della fedeltà del coniuge o del partner sessuale."
+            },
+            32: { // Item 33 (Schizotipico - Criterio 1)
+                q: "Quando si trova in pubblico e vede delle persone che parlano, spesso pensa che stiano parlando di lei?\n\n(Mi faccia un esempio.)",
+                c: "1. idee di riferimento (escludendo i deliri di riferimento)."
+            },
+            33: { // Item 34 (Schizotipico - Criterio 1 - Parte 2)
+                q: "Quando è in mezzo alla gente, ha spesso la sensazione che la stiano osservando o fissando?\n\n(Mi faccia un esempio.)",
+                c: "1. idee di riferimento (escludendo i deliri di riferimento)."
+            },
+            34: { // Item 35 (Schizotipico - Criterio 1 - Parte 3)
+                q: "Ha spesso la sensazione che le parole di una canzone o qualcosa in un film o in TV abbiano un significato speciale rivolto a lei in particolare?\n\n(Mi faccia un esempio.)",
+                c: "1. idee di riferimento (escludendo i deliri di riferimento)."
+            },
+            35: { // Item 36 (Schizotipico - Criterio 2)
+                q: "È una persona superstiziosa?\n\n(Per esempio?)",
+                c: "2. convinzioni strane o pensiero magico che influenzano il comportamento e sono in contrasto con le norme subculturali (per es., superstizione, credere nella chiaroveggenza, nella telepatia o nel «sesto senso»; nei bambini e negli adolescenti, fantasie e pensieri bizzarri)."
+            },
+            36: { // Item 37 (Schizotipico - Criterio 2 - Parte 2)
+                q: "Ha mai ritenuto di poter far avvenire delle cose semplicemente esprimendo un desiderio o pensandoci?\n\n(Per esempio?)",
+                c: "2. convinzioni strane o pensiero magico che influenzano il comportamento e sono in contrasto con le norme subculturali."
+            },
+            37: { // Item 38 (Schizotipico - Criterio 2 - Parte 3)
+                q: "Ha avuto esperienze personali con il soprannaturale?\n\n(Me ne parli.)",
+                c: "2. convinzioni strane o pensiero magico che influenzano il comportamento e sono in contrasto con le norme subculturali."
+            },
+            38: { // Item 39 (Schizotipico - Criterio 2 - Parte 4)
+                q: "Ha un \"sesto senso\" che le consente di conoscere e predire gli eventi?\n\n(Mi faccia un esempio.)",
+                c: "2. convinzioni strane o pensiero magico che influenzano il comportamento e sono in contrasto con le norme subculturali."
+            },
+            39: { // Item 40 (Schizotipico - Criterio 3)
+                q: "Ha spesso la sensazione che ogni cosa sia irreale, di essere staccato/a dal suo corpo o dalla sua mente, o di essere un osservatore/trice esterno/a dei suoi pensieri o movimenti?\n\n(Mi faccia un esempio.)",
+                c: "3. esperienze percettive insolite, incluse illusioni corporee."
+            },
+            40: { // Item 41 (Schizotipico - Criterio 3 - Parte 2)
+                q: "Vede spesso cose che le altre persone non vedono?\n\n(Come che cosa?)",
+                c: "3. esperienze percettive insolite, incluse illusioni corporee."
+            },
+            41: { // Item 42 (Schizotipico - Criterio 3 - Parte 3)
+                q: "Sente spesso una voce pronunciare piano il suo nome?\n\n(E altre cose?)",
+                c: "3. esperienze percettive insolite, incluse illusioni corporee."
+            },
+            42: { // Item 43 (Schizotipico - Criterio 3 - Parte 4)
+                q: "Ha mai avuto la sensazione che una qualche persona o forza fosse vicino a lei, anche se non poteva vedere nessuno?\n\n(Mi faccia un esempio.)",
+                c: "3. esperienze percettive insolite, incluse illusioni corporee."
+            },
+            43: { // Item 44 (Schizotipico - Criterio 8 e Note Criteri 4,5,6,7)
+                q: "Ci sono pochissime persone con cui lei si sente in intimità all'esterno della cerchia dei suoi familiari più stretti?\n\n[Se sì:] È perché le piace così oppure perché le risulta difficile sentirsi in intimità con le persone?",
+                c: "8. nessun amico stretto o confidente, eccetto i parenti di primo grado.\n\n[NOTA PER L'INTERVISTATORE]\nValutare i restanti criteri sulla base dell'intervista:\n4. pensiero/linguaggio strani\n5. sospettosità\n6. affettività coartata\n7. aspetto stravagante\n\nValutazioni 4,5,6,7:\n[?] [0] [1] [2] (x4)"
+            },
+            44: { // Item 45 (Schizotipico - Criterio 9)
+                q: "Si sente spesso in apprensione quando è circondato/a da persone che non conosce bene?\n\n(Perché?)",
+                c: "9. eccessiva ansia sociale, che non diminuisce con l'aumento della familiarità e tende a essere associata a preoccupazioni paranoidi piuttosto che a un giudizio negativo di sé."
+            },
+            45: { // Item 46 (Schizoide - Criterio 1)
+                q: "Per lei NON è importante avere amici o relazioni sentimentali o far parte della sua famiglia?\n\n(In che senso?)",
+                c: "1. non desidera né prova piacere nelle relazioni affettive, incluso il far parte di una famiglia."
+            },
+            46: { // Item 47 (Schizoide - Criterio 2)
+                q: "Quasi sempre preferirebbe fare le cose da solo/a, piuttosto che con altre persone?\n\n(Come che cosa?)",
+                c: "2. quasi sempre sceglie attività individuali."
+            },
+            47: { // Item 48 (Schizoide - Criterio 3)
+                q: "Ha poco o nessun interesse nell'avere esperienze sessuali con un'altra persona?",
+                c: "3. dimostra poco o nessun interesse di avere esperienze sessuali con un'altra persona."
+            },
+            48: { // Item 49 (Schizoide - Criterio 4 e Criterio 5 integrato)
+                q: "Ci sono davvero pochissime cose che le danno molto piacere?\n\n(Quali cose le danno piacere?)\n\n[DA VALUTARE ANCHE IL CRITERIO 5 - Riprendendo l'Item 44]:\nCi sono pochissime persone con cui si sente in intimità (esclusi i parenti)?",
+                c: "4. prova piacere in poche o nessuna attività.\n\nValutazione Criterio 4:\n[ ? ]   [ 0 ]   [ 1 ]   [ 2 ]\n\n5. non ha amici stretti o confidenti, eccetto i parenti di primo grado."
+            },
+            49: { // Item 50 (Schizoide - Criterio 6)
+                q: "Non le importa di ciò che la gente pensa di lei?\n\n(Cioè, se la gente la critica o se le fa dei complimenti?)",
+                c: "6. appare indifferente alle lodi o alle critiche degli altri."
+            },
+            50: { // Item 51 (Schizoide - Criterio 7)
+                q: "Raramente prova emozioni forti, come per esempio essere molto arrabbiato/a o sentirsi allegro/a?\n\n(Quando è stata l'ultima volta che ha provato un'emozione forte?)",
+                c: "7. mostra freddezza emotiva, distacco o affettività appiattita."
+            },
+            51: { // Item 52 (Istrionico - Criterio 1)
+                q: "Le piace essere al centro dell'attenzione?\n\n(Cosa fa quando non lo è? Come si sente?)",
+                c: "1. è a disagio in situazioni nelle quali non è al centro dell'attenzione."
+            },
+            52: { // Item 53 (Istrionico - Criterio 2)
+                q: "Tende a giocare a sedurre molto?\n\n(Per esempio? Lo fa anche con persone da cui non è attratto/a in senso romantico o sessuale?)",
+                c: "2. l'interazione con gli altri è spesso caratterizzata da inopportuno comportamento sessualmente seduttivo o provocante."
+            },
+            53: { // Item 54 (Istrionico - Criterio 2 - Parte 2)
+                q: "Si trova spesso \"a provarci\" con le persone?\n\n(Per esempio?)",
+                c: "2. l'interazione con gli altri è spesso caratterizzata da inopportuno comportamento sessualmente seduttivo o provocante."
+            },
+            54: { // Item 55 (Istrionico - Criterio 4)
+                q: "Cerca di attirare l'attenzione su di sé, grazie al suo modo di vestire o al suo aspetto fisico?\n\n(Mi faccia un esempio. Impiega molto tempo a prepararsi prima di uscire?)",
+                c: "4. utilizza costantemente l'aspetto fisico per attirare l'attenzione su di sé."
+            },
+            55: { // Item 56 (Istrionico - Criterio 6 e Criterio 5)
+                q: "Tende a essere una persona molto teatrale nelle sue azioni e nel linguaggio?\n\n(Mi faccia un esempio.)\n\n[DA VALUTARE ANCHE IL CRITERIO 5 SULLA BASE DELL'ELOQUIO DURANTE L'INTERVISTA]",
+                c: "6. mostra autodrammatizzazione, teatralità ed espressione esagerata delle emozioni.\n\nValutazione Criterio 6:\n[ ? ]   [ 0 ]   [ 1 ]   [ 2 ]\n\n5. ha uno stile di eloquio eccessivamente impressionistico e privo di dettagli."
+            },
+            56: { // Item 57 (Istrionico - Criterio 3)
+                q: "È più emotivo/a della maggior parte delle persone, per esempio, singhiozza quando ascolta una storia triste?\n\n(Che cosa fa? Le sue emozioni cambiano molto rapidamente?)",
+                c: "3. manifesta un'espressione delle emozioni rapidamente mutevole e superficiale."
+            },
+            57: { // Item 58 (Istrionico - Criterio 7)
+                q: "Cambia spesso idea sulle cose in base alle persone con cui è o a quello che ha appena letto o visto in TV?\n\n(Mi faccia un esempio.)",
+                c: "7. è suggestionabile (cioè, facilmente influenzato/a dagli altri o dalle circostanze)."
+            },
+            58: { // Item 59 (Istrionico - Criterio 8)
+                q: "Pensa spesso che anche persone che forniscono un servizio, come il suo idraulico, il suo meccanico e il suo dottore, siano suoi buoni amici?\n\n(Per esempio? Pensa che per lei sia più facile, rispetto alle altre persone, provare intimità per qualcuno?)",
+                c: "8. considera le relazioni più intime di quanto non siano realmente."
+            },
+            59: { // Item 60 (Narcisistico - Criterio 1)
+                q: "È più importante, più talentuoso/a o più di successo della maggior parte delle altre persone?\n\n(In che modo? Ritiene che ci siano poche persone di successo e talentuose quanto lei?)",
+                c: "1. ha un senso grandioso di importanza (per es., esagera risultati e talenti, si aspetta di essere considerato/a superiore senza un'adeguata motivazione)."
+            },
+            60: { // Item 61 (Narcisistico - Criterio 1 - Parte 2)
+                q: "Le hanno detto che lei ha un'opinione troppo alta di sé?\n\n(In che modo?)",
+                c: "1. ha un senso grandioso di importanza (per es., esagera risultati e talenti, si aspetta di essere considerato/a superiore senza un'adeguata motivazione)."
+            },
+            61: { // Item 62 (Narcisistico - Criterio 2)
+                q: "Pensa molto al potere, al successo, o al riconoscimento che si aspetta che un giorno sarà suo?\n\n(Oppure pensa all'essere incondizionatamente amato/a o ammirato/a?)",
+                c: "2. è assorbito/a da fantasie di successo, potere, fascino, bellezza illimitati, o di amore ideale."
+            },
+            62: { // Item 63 (Narcisistico - Criterio 2 - Parte 2)
+                q: "Pensa spesso alla perfetta storia d'amore che un giorno vivrà?",
+                c: "2. è assorbito/a da fantasie di successo, potere, fascino, bellezza illimitati, o di amore ideale."
+            },
+            63: { // Item 64 (Narcisistico - Criterio 3)
+                q: "Quando ha un problema insiste quasi sempre per contattare i massimi specialisti?\n\n(Perché?)",
+                c: "3. crede di essere «speciale» e unico/a, e di poter essere capito/a solo da, o di dover frequentare, altre persone (o istituzioni) speciali o di classe sociale elevata."
+            },
+            64: { // Item 65 (Narcisistico - Criterio 3 - Parte 2)
+                q: "Cerca di passare il suo tempo solo con persone importanti o influenti?\n\n(Perché?)",
+                c: "3. crede di essere «speciale» e unico/a, e di poter essere capito/a solo da, o di dover frequentare, altre persone (o istituzioni) speciali o di classe sociale elevata."
+            },
+            65: { // Item 66 (Narcisistico - Criterio 4)
+                q: "Per lei è importante che la gente in qualche modo le presti attenzione o la ammiri?\n\n(Pensa spesso di aver bisogno che le vengano rivolti dei complimenti? Quando qualcuno fa un lavoro per lei, ha bisogno che le venga detto che l'ha fatto bene?)",
+                c: "4. richiede eccessiva ammirazione."
+            },
+            66: { // Item 67 (Narcisistico - Criterio 5)
+                q: "Pensa di essere il tipo di persona che merita un trattamento di riguardo oppure pensa che le altre persone dovrebbero fare automaticamente quello che lei vuole?\n\n(Si arrabbia molto quando le persone non fanno quello che lei si aspetta che facciano?)",
+                c: "5. ha un senso di diritto (cioè l'irragionevole aspettativa di speciali trattamenti di favore o di soddisfazione immediata delle proprie aspettative)."
+            },
+            67: { // Item 68 (Narcisistico - Criterio 6)
+                q: "Deve mettere spesso i suoi bisogni davanti a quelli delle altre persone?\n\n(Mi faccia un esempio. Le è stato detto che si approfitta degli altri?)",
+                c: "6. è interpersonale sfruttatore/trice (cioè si approfitta degli altri per i propri scopi)."
+            },
+            68: { // Item 69 (Narcisistico - Criterio 6 - Parte 2)
+                q: "Gli altri si sono lamentati del fatto che lei si approfitta delle persone?\n\n(Mi faccia un esempio.)",
+                c: "6. è interpersonale sfruttatore/trice (cioè si approfitta degli altri per i propri scopi)."
+            },
+            69: { // Item 70 (Narcisistico - Criterio 7)
+                q: "Generalmente, ritiene che i bisogni o i sentimenti degli altri non siano davvero un suo problema?\n\n(Mi faccia un esempio.)",
+                c: "7. manca di empatia: è incapace di riconoscere o di identificarsi con i sentimenti e le necessità degli altri."
+            },
+            70: { // Item 71 (Narcisistico - Criterio 7 - Parte 2)
+                q: "Trova spesso che i problemi delle altre persone siano noiosi?",
+                c: "7. manca di empatia: è incapace di riconoscere o di identificarsi con i sentimenti e le necessità degli altri."
+            },
+            71: { // Item 72 (Narcisistico - Criterio 7 - Parte 3)
+                q: "Le altre persone si sono lamentate del fatto che lei non le ascolta o non si interessa ai loro sentimenti?\n\n(Mi faccia un esempio.)",
+                c: "7. manca di empatia: è incapace di riconoscere o di identificarsi con i sentimenti e le necessità degli altri."
+            },
+            72: { // Item 73 (Narcisistico - Criterio 8)
+                q: "Quando vede qualcuno che ha successo, ritiene che lei lo meriti più di lui/lei?\n\n(È invidioso/a delle persone che sembrano avere tutto ciò che lei non ha?)",
+                c: "8. è spesso invidioso/a degli altri o crede che gli altri lo/a invidino."
+            },
+            73: { // Item 74 (Narcisistico - Criterio 8 - Parte 2)
+                q: "Pensa che gli altri siano spesso invidiosi di lei?\n\n(Perché?)",
+                c: "8. è spesso invidioso/a degli altri o crede che gli altri lo/a invidino."
+            },
+            74: { // Item 75 (Narcisistico - Criterio 9)
+                q: "Pensa che ci siano pochissime persone che sono degne del suo tempo e della sua attenzione?\n\n(Le altre persone le hanno detto che lei fa il/la superiore con loro?)",
+                c: "9. mostra comportamenti o atteggiamenti arroganti e presuntuosi."
+            },
+            75: { // Item 76 (Narcisistico - Criterio 9 - Parte 2)
+                q: "Le altre persone si sono lamentate del fatto che lei si comporta in modo troppo arrogante e prepotente?\n\n(Per esempio?)",
+                c: "9. mostra comportamenti o atteggiamenti arroganti e presuntuosi."
+            },
+            76: { // Item 77 (Borderline - Criterio 1)
+                q: "Spesso si è agitato/a molto, quando ha pensato che qualcuno cui lei teneva davvero stesse per lasciarla?\n\n(Che cosa ha fatto?)",
+                c: "1. sforzi disperati per evitare un reale o immaginario abbandono."
+            },
+            77: { // Item 78 (Borderline - Criterio 2)
+                q: "Le relazioni con le persone cui tiene davvero hanno molti alti e bassi estremi?\nMe ne parli.\n\n(Ci sono state delle volte in cui lei ha ritenuto che fossero perfette per lei o tutto ciò che desiderava, e altre volte in cui ha pensato che fossero terribili? Quante relazioni sono state così?)",
+                c: "2. un pattern di relazioni interpersonali instabili e intense, caratterizzato dall'alternanza tra gli estremi di iperidealizzazione e svalutazione."
+            },
+            78: { // Item 79 (Borderline - Criterio 3)
+                q: "Il suo senso di chi lei sia cambia spesso in modo radicale?\n\n(Mi faccia un esempio.)",
+                c: "3. alterazione dell'identità: immagine di sé o percezione di sé marcatamente e persistentemente instabili."
+            },
+            79: { // Item 80 (Borderline - Criterio 3 - Parte 2)
+                q: "È diverso/a con persone diverse o in situazioni differenti, tanto che a volte non sa chi realmente sia?\n\n(In che modo?)",
+                c: "3. alterazione dell'identità: immagine di sé o percezione di sé marcatamente e persistentemente instabili."
+            },
+            80: { // Item 81 (Borderline - Criterio 3 - Parte 3)
+                q: "Ci sono stati molti cambiamenti improvvisi nei suoi scopi, progetti di carriera, credenze religiose, e così via?\n\n(Mi faccia un esempio.)",
+                c: "3. alterazione dell'identità: immagine di sé o percezione di sé marcatamente e persistentemente instabili."
+            },
+            81: { // Item 82 (Borderline - Criterio 3 - Parte 4)
+                q: "Ci sono stati molti cambiamenti improvvisi nella sua tipologia di amici o nella sua identità sessuale?\n\n(Mi faccia un esempio.)",
+                c: "3. alterazione dell'identità: immagine di sé o percezione di sé marcatamente e persistentemente instabili."
+            },
+            82: { // Item 83 (Borderline - Criterio 4)
+                q: "Ha fatto spesso delle cose impulsivamente?\n\n(Ad esempio: spendere più denaro di quanto potesse permettersi, fare sesso con persone che conosceva a malapena, bere troppo, fare uso di droghe, o abbuffarsi di cibo?)",
+                c: "4. impulsività in almeno due aree che sono potenzialmente dannose per il soggetto (per es., spese sconsiderate, sesso, abuso di sostanze, guida spericolata, abbuffate)."
+            },
+            83: { // Item 84 (Borderline - Criterio 5)
+                q: "Ha cercato di farsi del male o di uccidersi, oppure ha minacciato di farlo?\n\n(Quante volte? Che cosa ha fatto?)",
+                c: "5. ricorrenti comportamenti, gesti o minacce suicidari, o comportamento automutilante."
+            },
+            84: { // Item 85 (Borderline - Criterio 5 - Parte 2)
+                q: "Si è mai tagliato/a, bruciato/a, o graffiato/a intenzionalmente?\n\n(In che modo? Quante volte?)",
+                c: "5. ricorrenti comportamenti, gesti o minacce suicidari, o comportamento automutilante."
+            },
+            85: { // Item 86 (Borderline - Criterio 6)
+                q: "Il suo umore cambia spesso nell'arco di un solo giorno, sulla base di quello che sta accadendo nella sua vita?\n\n(Per esempio?)",
+                c: "6. instabilità affettiva dovuta a una marcata reattività dell'umore (per es., episodica intensa disforia, irritabilità o ansia, che di solito durano poche ore e soltanto raramente più di pochi giorni)."
+            },
+            86: { // Item 87 (Borderline - Criterio 7)
+                q: "Avverte spesso un senso di vuoto interiore?\n\n(Com'è questa sensazione?)",
+                c: "7. sentimenti cronici di vuoto."
+            },
+            87: { // Item 88 (Borderline - Criterio 8)
+                q: "Le capita spesso di avere esplosioni di collera o di diventare così arrabbiato/a da perdere il controllo?\n\n(Che cosa fa?)",
+                c: "8. rabbia inappropriata, intensa, o difficoltà a controllare la rabbia (per es., frequenti accessi di ira, rabbia costante, ricorrenti scontri fisici)."
+            },
+            88: { // Item 89 (Borderline - Criterio 8 - Parte 2)
+                q: "Quando si arrabbia, picchia le persone oppure scaglia degli oggetti?\n\n(Mi faccia un esempio.)",
+                c: "8. rabbia inappropriata, intensa, o difficoltà a controllare la rabbia."
+            },
+            89: { // Item 90 (Borderline - Criterio 8 - Parte 3)
+                q: "La fanno arrabbiare molto anche cose da poco?\n\n(Mi faccia un esempio.)",
+                c: "8. rabbia inappropriata, intensa, o difficoltà a controllare la rabbia."
+            },
+            90: { // Item 91 (Borderline - Criterio 9)
+                q: "Quando si agita molto, diventa sospettoso/a verso gli altri o si sente distaccato/a dal suo corpo o sente che le cose sono irreali?\n\n(Che cosa fa? Quanto dura?)",
+                c: "9. ideazione paranoide transitoria, associata allo stress, o gravi sintomi dissociativi."
+            },
+            91: { // Item 92 (Antisociale - Criterio Condotta 1)
+                q: "Prima dei 15 anni ha fatto il prepotente con, minacciato, o spaventato altri ragazzini?\n\n(Mi faccia un esempio. Questo succedeva spesso?)",
+                c: "Disturbo della condotta:\n1. spesso fa il prepotente, minaccia o spaventa gli altri."
+            },
+            92: { // Item 93 (Antisociale - Criterio Condotta 2)
+                q: "Prima dei 15 anni ha dato inizio a scontri fisici?\n\n(Me ne parli. Quante volte è successo?)",
+                c: "Disturbo della condotta:\n2. spesso dà inizio a scontri fisici."
+            },
+            93: { // Item 94 (Antisociale - Criterio Condotta 3)
+                q: "Prima dei 15 anni ha ferito o minacciato qualcuno con un'arma, come un bastone, una pietra, una bottiglia rotta, un coltello o un'arma da fuoco?\n\n(Me ne parli.)",
+                c: "Disturbo della condotta:\n3. ha usato un'arma che può causare seri danni fisici ad altri (per es., un bastone, una barra di ferro, una bottiglia rotta, un coltello, una pistola)."
+            },
+            94: { // Item 95 (Antisociale - Criterio Condotta 4)
+                q: "Prima dei 15 anni ha fatto delle cose crudeli a qualcuno causandogli dolore fisico o sofferenza?\n\n(Per esempio?)",
+                c: "Disturbo della condotta:\n4. è stato/a fisicamente crudele con le persone."
+            },
+            95: { // Item 96 (Antisociale - Criterio Condotta 5)
+                q: "Prima dei 15 anni ha fatto del male, di proposito, a degli animali?\n\n(Mi faccia un esempio.)",
+                c: "Disturbo della condotta:\n5. è stato/a fisicamente crudele con gli animali."
+            },
+            96: { // Item 97 (Antisociale - Criterio Condotta 6)
+                q: "Prima dei 15 anni ha rubato, scippato o preso in modo violento qualcosa a qualcuno minacciandolo/la?\n\n(Me ne parli.)",
+                c: "Disturbo della condotta:\n6. ha rubato affrontando la vittima (per es., aggressione, scippo, estorsione, rapina a mano armata)."
+            },
+            97: { // Item 98 (Antisociale - Criterio Condotta 7)
+                q: "Prima dei 15 anni ha costretto qualcuno a fare qualcosa di sessuale?\n\n(Me ne parli.)",
+                c: "Disturbo della condotta:\n7. ha costretto qualcuno ad attività sessuali."
+            },
+            98: { // Item 99 (Antisociale - Criterio Condotta 8)
+                q: "Prima dei 15 anni ha appiccato dei fuochi?\n\n(Perché l'ha fatto? Intendeva causare dei seri danni?)",
+                c: "Disturbo della condotta:\n8. ha deliberatamente appiccato il fuoco con l'intenzione di causare seri danni."
+            },
+            99: { // Item 100 (Antisociale - Criterio Condotta 9)
+                q: "Prima dei 15 anni ha danneggiato deliberatamente cose che non erano sue?\n\n(In che modo?)",
+                c: "Disturbo della condotta:\n9. ha deliberatamente distrutto proprietà altrui (in modo diverso dall'appiccare il fuoco)."
+            },
+            100: { // Item 101 (Antisociale - Criterio Condotta 10)
+                q: "Prima dei 15 anni è entrato con la forza in una casa, in un altro edificio, o in un'automobile?\n\n(Me ne parli.)",
+                c: "Disturbo della condotta:\n10. è penetrato/a con la forza in un edificio, un'automobile o una casa altrui."
+            },
+            101: { // Item 102 (Antisociale - Criterio Condotta 11)
+                q: "Prima dei 15 anni ha detto molte bugie o ha ingannato altre persone per ottenere qualcosa che voleva o per evitare di fare qualcosa?\n\n(Mi faccia un esempio.)",
+                c: "Disturbo della condotta:\n11. mente spesso per ottenere vantaggi o favori o per evitare gli obblighi (cioè raggira gli altri)."
+            },
+            102: { // Item 103 (Antisociale - Criterio Condotta 12)
+                q: "Prima dei 15 anni ha rubato o compiuto furti o contraffatto la firma di qualcuno per denaro?\n\n(Mi faccia un esempio. Quante volte?)",
+                c: "Disturbo della condotta:\n12. ha rubato articoli di valore non banale senza affrontare la vittima (per es., taccheggio, ma senza scasso; contraffazione)."
+            },
+            103: { // Item 104 (Antisociale - Criterio Condotta 14)
+                q: "Prima dei 15 anni è scappato di casa, stando fuori tutta la notte?\n\n(Quante volte è successo? C'è mai stata un'occasione in cui è stato via da casa per molto tempo?)",
+                c: "Disturbo della condotta:\n14. è scappato/a di casa di notte almeno due volte mentre viveva nella casa dei genitori o di chi ne faceva le veci, o una volta se vi è rimasto/a assente per un lungo periodo."
+            },
+            104: { // Item 105 (Antisociale - Criterio Condotta 13)
+                q: "Prima dei 13 anni stava spesso fuori fino a molto tardi, ben dopo l'ora in cui avrebbe dovuto essere a casa?\n\n(I suoi genitori glielo avevano proibito? Quante volte è successo?)",
+                c: "Disturbo della condotta:\n13. trascorre spesso la notte fuori, malgrado le proibizioni dei genitori, con inizio prima dei 13 anni di età."
+            },
+            105: { // Item 106 (Antisociale - Criterio Condotta 15)
+                q: "Prima dei 13 anni ha marinato spesso la scuola?\n\n(Per quanti giorni? Quante volte è successo?)",
+                c: "Disturbo della condotta:\n15. marina spesso la scuola, con inizio prima dei 13 anni di età.\n\n[NOTA CRITERIO C: Se sono presenti almeno 3 criteri della condotta (valutati \"2\"), sussiste il Criterio C per l'Antisociale. Procedere all'intervista clinica per valutare i restanti Criteri A per l'età adulta.]"
+            }
+        };
+
+        const clusters = [
+            { name: "Evitante", start: 1, end: 7, cutoff: 4 },
+            { name: "Dipendente", start: 8, end: 15, cutoff: 5 },
+            { name: "Ossessivo-Compulsivo", start: 16, end: 24, cutoff: 4 },
+            { name: "Paranoide", start: 25, end: 32, cutoff: 4 },
+            { name: "Schizotipico", start: 33, end: 45, cutoff: 5 },
+            { name: "Schizoide", start: 46, end: 51, cutoff: 4 },
+            { name: "Istrionico", start: 52, end: 59, cutoff: 5 },
+            { name: "Narcisistico", start: 60, end: 76, cutoff: 5 },
+            { name: "Borderline", start: 77, end: 91, cutoff: 5 },
+            { name: "Antisociale", start: 92, end: 106, cutoff: 3 }
+        ];
+
+        const answers = new Array(106).fill(null);
+        let patientData = { name: '', age: '', date: '' };
+        let clusterResults = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('test-date').valueAsDate = new Date();
+            renderPage();
+        });
+
+        function renderPage() {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = '';
+            
+            for (let i = 0; i < items.length; i++) {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-xl p-5 md:p-6 card-shadow border border-slate-100 transition-all duration-300";
+                
+                const questionText = document.createElement('h3');
+                questionText.className = "text-lg font-medium text-slate-800 mb-4";
+                questionText.textContent = items[i];
+                card.appendChild(questionText);
+
+                const btnContainer = document.createElement('div');
+                btnContainer.className = "grid grid-cols-2 gap-4";
+                
+                // Bottone SI
+                const btnSi = document.createElement('button');
+                btnSi.className = `option-btn w-full rounded-lg border-2 border-slate-200 text-lg font-bold text-slate-500 hover:border-red-400 hover:text-red-500 bg-white`;
+                btnSi.textContent = "SÌ";
+                btnSi.onclick = () => selectAnswer(i, 1, card, btnSi, btnNo);
+                
+                // Bottone NO
+                const btnNo = document.createElement('button');
+                btnNo.className = `option-btn w-full rounded-lg border-2 border-slate-200 text-lg font-bold text-slate-500 hover:border-slate-400 hover:text-slate-600 bg-white`;
+                btnNo.textContent = "NO";
+                btnNo.onclick = () => selectAnswer(i, 0, card, btnSi, btnNo);
+
+                btnContainer.appendChild(btnNo);
+                btnContainer.appendChild(btnSi);
+                card.appendChild(btnContainer);
+                container.appendChild(card);
+            }
+        }
+
+        function selectAnswer(itemIndex, value, cardElement, btnSi, btnNo) {
+            answers[itemIndex] = value;
+            btnSi.classList.remove('selected-si');
+            btnNo.classList.remove('selected-no');
+            
+            // Rimuove l'evidenziazione rossa se la domanda era stata saltata
+            cardElement.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
+            
+            if(value === 1) btnSi.classList.add('selected-si');
+            else btnNo.classList.add('selected-no');
+            
+            document.getElementById('error-message').classList.add('hidden');
+        }
+
+        function submitTest() {
+            // Rimuovi eventuali evidenziazioni di errore precedenti per fare pulizia
+            const allCards = document.getElementById('questions-container').children;
+            for(let c of allCards) {
+                c.classList.remove('border-red-500', 'ring-2', 'ring-red-200');
+            }
+
+            // Controllo sicurezza finale: cerca la prima non risposta
+            for (let i = 0; i < items.length; i++) {
+                if (answers[i] === null) {
+                    const errorMsg = document.getElementById('error-message');
+                    errorMsg.textContent = `Rispondi a tutte le domande prima di proseguire. (Mancano ${items.length - answers.filter(a => a !== null).length} risposte)`;
+                    errorMsg.classList.remove('hidden');
+                    
+                    const firstUnanswered = document.getElementById('questions-container').children[i];
+                    // Aggiunge un bordo rosso alla domanda mancante per farla risaltare
+                    firstUnanswered.classList.add('border-red-500', 'ring-2', 'ring-red-200');
+                    firstUnanswered.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    return;
+                }
+            }
+
+            patientData.name = document.getElementById('patient-name').value || 'Anonimo';
+            patientData.age = document.getElementById('patient-age').value || '-';
+            patientData.date = document.getElementById('test-date').value;
+
+            document.getElementById('patient-data-section').classList.add('hidden-section');
+            document.getElementById('test-section').classList.add('hidden-section');
+            document.getElementById('results-section').classList.remove('hidden-section');
+            window.scrollTo(0, 0);
+
+            calculateResults();
+        }
+
+        function calculateResults() {
+            clusterResults = clusters.map(cluster => {
+                let score = 0;
+                for (let i = cluster.start - 1; i < cluster.end; i++) {
+                    score += answers[i];
+                }
+                return {
+                    ...cluster,
+                    score: score,
+                    superato: score >= cluster.cutoff
+                };
+            });
+
+            renderTableWeb();
+        }
+
+        function renderTableWeb() {
+            let tableHTML = `
+                <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden mt-6">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-prisma text-white text-sm">
+                                <th class="p-4 font-semibold">Disturbo di Personalità</th>
+                                <th class="p-4 font-semibold text-center w-24">Punteggio</th>
+                                <th class="p-4 font-semibold text-center w-24">Cut-off</th>
+                                <th class="p-4 font-semibold text-center w-36">Approfondire?</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            clusterResults.forEach(res => {
+                const rowBg = res.superato ? "bg-red-50" : "hover:bg-slate-50";
+                const scoreColor = res.superato ? "text-red-600" : "text-slate-600";
+                const esitoLabel = res.superato ? "<span class='bg-red-100 text-red-700 px-2 py-1 rounded font-bold text-xs'>SÌ (Intervista)</span>" : "<span class='text-slate-400 text-xs'>No</span>";
+
+                tableHTML += `
+                    <tr class="border-b border-slate-100 transition-colors ${rowBg}">
+                        <td class="p-4 text-slate-800 font-medium">${res.name}</td>
+                        <td class="p-4 text-center ${scoreColor} font-bold text-lg">${res.score}</td>
+                        <td class="p-4 text-center text-slate-500 text-sm">≥ ${res.cutoff}</td>
+                        <td class="p-4 text-center">${esitoLabel}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `</tbody></table></div>`;
+            document.getElementById('scoring-table-container').innerHTML = tableHTML;
+        }
+
+        window.jsPDF = window.jspdf.jsPDF;
+
+        // 1. PDF: Solo Protocollo
+        function generateProtocolPDF() {
+            const doc = new jsPDF();
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Centro di psicoterapia Prisma", 105, 15, { align: "center" });
+            doc.setFontSize(12);
+            doc.text("Protocollo Risposte SCID-5-SPQ", 105, 23, { align: "center" });
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`ID Paziente: ${patientData.name} | Età: ${patientData.age} | Data: ${patientData.date}`, 105, 30, { align: "center" });
+            doc.line(20, 35, 190, 35);
+            doc.setTextColor(0, 0, 0);
+            
+            let yPos = 45;
+            for (let i = 0; i < items.length; i++) {
+                if (yPos > 275) {
+                    doc.addPage();
+                    yPos = 20;
+                }
+                const textLines = doc.splitTextToSize(items[i], 150);
+                doc.text(textLines, 20, yPos);
+                
+                doc.setFont("helvetica", "bold");
+                const ansText = answers[i] === 1 ? "[ SÌ ]" : "[ NO ]";
+                if(answers[i] === 1) doc.setTextColor(220, 38, 38); // Rosso per SÌ
+                else doc.setTextColor(100, 100, 100); // Grigio per NO
+                
+                doc.text(ansText, 175, yPos);
+                doc.setTextColor(0, 0, 0);
+                doc.setFont("helvetica", "normal");
+                yPos += (textLines.length * 5) + 3;
+            }
+            doc.save(`Protocollo_SCID_${patientData.name.replace(/\s+/g, '_')}.pdf`);
+        }
+
+        // 2. PDF: Relazione Clinica + Intervista Filtrata (A 3 COLONNE)
+        function generateClinicalPDF() {
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const margin = 10; // Margine ridotto per far spazio alle 3 colonne
+            
+            // Intestazione
+            doc.setFontSize(16);
+            doc.setTextColor(44, 62, 80);
+            doc.text("Centro di psicoterapia Prisma", 105, 15, { align: "center" });
+            doc.setFontSize(12);
+            doc.text("Esito Screening SCID-5-SPQ & Traccia Intervista", 105, 23, { align: "center" });
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`ID Paziente: ${patientData.name}   |   Età: ${patientData.age}   |   Data: ${patientData.date}`, 105, 30, { align: "center" });
+            
+            // TABELLA RIEPILOGO
+            const tableBody = clusterResults.map(res => [
+                { content: res.name, styles: { fontStyle: res.superato ? 'bold' : 'normal', textColor: res.superato ? [220, 38, 38] : [51, 65, 85] } },
+                { content: res.score.toString(), styles: { halign: 'center', fontStyle: 'bold', textColor: res.superato ? [220, 38, 38] : [51, 65, 85] } },
+                { content: `≥ ${res.cutoff}`, styles: { halign: 'center', textColor: [100, 100, 100] } },
+                { content: res.superato ? 'SÌ (Approfondire)' : 'No', styles: { halign: 'center', fontStyle: res.superato ? 'bold' : 'normal', textColor: res.superato ? [220, 38, 38] : [100, 100, 100] } }
+            ]);
+
+            doc.autoTable({
+                startY: 40,
+                head: [['Disturbo di Personalità', 'Punteggio', 'Cut-off', 'Esito']],
+                body: tableBody,
+                theme: 'grid',
+                headStyles: { fillColor: [44, 62, 80] },
+                margin: { left: 15, right: 15 }
+            });
+
+            // PARTE 2: DOMANDE FILTRATE PER L'INTERVISTA CLINICA A 3 COLONNE
+            let currentY = doc.lastAutoTable.finalY + 20;
+            
+            const disturbiDaApprofondire = clusterResults.filter(c => c.superato);
+
+            if (disturbiDaApprofondire.length === 0) {
+                doc.setFontSize(12);
+                doc.setTextColor(100, 100, 100);
+                doc.text("Nessun disturbo di personalità ha superato la soglia di screening.", 15, currentY);
+            } else {
+                doc.addPage();
+                currentY = 20;
+                doc.setFontSize(14);
+                doc.setTextColor(44, 62, 80);
+                doc.setFont("helvetica", "bold");
+                doc.text("TRACCIA INTERVISTA STRUTTURATA (SCID-5-PD)", 15, currentY);
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "normal");
+                doc.text("Di seguito la griglia di intervista per i soli disturbi risultati positivi allo screening.", 15, currentY + 5);
+                currentY += 12;
+
+                disturbiDaApprofondire.forEach(cluster => {
+                    const blockBody = [];
+                    
+                    // Loop sugli item di questo cluster
+                    for (let i = cluster.start - 1; i < cluster.end; i++) {
+                        // Colonna 1: Domanda paziente
+                        const ansText = answers[i] === 1 ? "[ SÌ ]" : "[ NO ]";
+                        const leftColText = `${ansText}\n\n${items[i]}`;
+                        
+                        // Estrazione dal dizionario (o fallback se non ancora inserito)
+                        const interviewQ = interviewData[i]?.q || "\n\n(Traccia intervista da completare nel codice fonte)\n\n";
+                        const interviewC = interviewData[i]?.c || "\n\n(Criterio DSM-5 da inserire)\n\n";
+
+                        // Colonna 3 format: Criterio + stringa punteggi
+                        const rightColText = `${interviewC}\n\nValutazione:\n[ ? ]   [ 0 ]   [ 1 ]   [ 2 ]`;
+
+                        blockBody.push([
+                            { content: leftColText, styles: { textColor: answers[i]===1 ? [220, 38, 38] : [100, 100, 100], fontStyle: answers[i]===1 ? 'bold' : 'normal' } },
+                            { content: interviewQ, styles: { textColor: [30, 41, 59] } },
+                            { content: rightColText, styles: { textColor: [51, 65, 85] } }
+                        ]);
+                    }
+
+                    doc.autoTable({
+                        startY: currentY,
+                        head: [
+                            [{ content: `MODULO: DISTURBO ${cluster.name.toUpperCase()}`, colSpan: 3, styles: { fillColor: [220, 38, 38], halign: 'center', fontStyle: 'bold' } }],
+                            ['Questionario SPQ', 'Domande Intervista Clinica', 'Criteri DSM-5 e Punteggio']
+                        ],
+                        body: blockBody,
+                        theme: 'grid',
+                        headStyles: { fillColor: [44, 62, 80], textColor: 255 },
+                        columnStyles: { 
+                            0: { cellWidth: '25%' }, // 25% della pagina
+                            1: { cellWidth: '45%' }, // 45% della pagina
+                            2: { cellWidth: '30%' }  // 30% della pagina
+                        },
+                        margin: { left: margin, right: margin },
+                        styles: { overflow: 'linebreak', fontSize: 9, cellPadding: 4 },
+                        pageBreak: 'auto'
+                    });
+                    
+                    currentY = doc.lastAutoTable.finalY + 15;
+                    
+                    // Vai a pagina nuova se manca poco spazio per il prossimo blocco
+                    if (currentY > 250) {
+                        doc.addPage();
+                        currentY = 20;
+                    }
+                });
+            }
+
+            doc.save(`Relazione_Clinica_SCID_${patientData.name.replace(/\s+/g, '_')}.pdf`);
+        }
+    </script>
+</body>
+</html>
