@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schema Therapy – Template</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green-bg: #e8f5e9; --green-bd: #81c784; --green-tx: #1b5e20;
+  --blue-bg: #e3f2fd;  --blue-bd: #90caf9;  --blue-tx: #0d47a1;
+  --red-bg:  #ffebee;  --red-bd:  #ef9a9a;  --red-tx:  #b71c1c;
+  --gray-bg: #f5f5f5;  --gray-bd: #bdbdbd;  --gray-tx: #424242;
+  --yellow:  #fff9c4;  --yel-bd:  #f9a825;  --yel-tx:  #5d4000;
+  --purple-bg: #f3e5f5; --purple-bd: #ce93d8; --purple-tx: #4a148c;
+  --teal-bg: #e0f2f1;   --teal-bd:  #80cbc4;  --teal-tx:  #004d40;
+  --page: #fafaf7;
+  --font: 'Nunito', sans-serif;
+}
+
+body {
+  background: #ddd9d3;
+  font-family: var(--font);
+  padding: 20px 16px 60px;
+  min-height: 100vh;
+  color: #2c2c2c;
+}
+
+.page {
+  background: var(--page);
+  max-width: 1020px;
+  min-width: min-content;
+  margin: 0 auto;
+  border-radius: 6px;
+  box-shadow: 0 4px 28px rgba(0,0,0,0.18);
+  padding: 18px 18px 24px;
+}
+
+/* TOOLBAR */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+}
+.toolbar-title-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.toolbar-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #aaa;
+}
+.toolbar-credits {
+  font-size: 0.55rem;
+  font-weight: 700;
+  color: #bbb;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.btn {
+  padding: 7px 18px;
+  border-radius: 7px;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all .16s;
+  white-space: nowrap;
+}
+.btn-green  { background: #2e7d32; color: #fff; border-color: #2e7d32; }
+.btn-green:hover  { background: #1b5e20; }
+.btn-red    { background: #fff; color: #b71c1c; border-color: #ef9a9a; }
+.btn-red:hover    { background: #ffebee; }
+.btn-gray   { background: #fff; color: #666; border-color: #ddd; }
+.btn-gray:hover   { background: #f5f5f5; border-color: #bbb; }
+
+/* GRID */
+.map-grid {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 0;
+}
+.sidebar {
+  grid-column: 1;
+  grid-row: 1 / 6;
+  display: flex;
+  flex-direction: column;
+}
+.sidebar-lbl {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 2px solid #ddd;
+  padding: 6px 0;
+}
+.lbl-cons  { flex: 2; border-color: #4caf50; color: #2e7d32; }
+.lbl-impl  { flex: 4; border-color: #ef9a9a; color: #b71c1c; }
+.lbl-viss  { flex: 1; border-color: #bbb; color: #999; }
+
+.main { grid-column: 2; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+
+/* ── HEADER ROW ── */
+.header-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+/* Bubble */
+.bubble-wrap { padding-top: 12px; }
+.bubble {
+  background: white;
+  border: 2px solid #bbb;
+  border-radius: 16px;
+  padding: 10px 13px;
+  position: relative;
+}
+.bubble.left::after  { content:''; position:absolute; bottom:-12px; left:20px;  border:6px solid transparent; border-top-color:#bbb; }
+.bubble.right::after { content:''; position:absolute; bottom:-12px; right:20px; border:6px solid transparent; border-top-color:#bbb; }
+.bubble-lines { display: flex; flex-direction: column; gap: 4px; }
+
+/* Name + Adulto Sano */
+.adulto-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.name-badge {
+  background: var(--yellow);
+  border: 2px solid var(--yel-bd);
+  border-radius: 6px;
+  padding: 4px 0;
+  text-align: center;
+  width: 100%;
+}
+.adulto-box {
+  background: var(--green-bg);
+  border: 2px solid var(--green-bd);
+  border-radius: 10px;
+  padding: 11px 14px;
+  width: 100%;
+}
+.adulto-box-title {
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--green-tx);
+  margin-bottom: 8px;
+}
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  min-height: 28px;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(76,175,80,.13);
+  border: 1px solid rgba(76,175,80,.35);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 0.71rem;
+  font-weight: 700;
+  color: var(--green-tx);
+}
+.tag .del-tag {
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #aaa;
+  line-height: 1;
+  margin-left: 2px;
+  display: none;
+}
+.tag:hover .del-tag { display: inline; }
+.add-tag-row {
+  display: flex;
+  gap: 5px;
+  margin-top: 7px;
+}
+.add-tag-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #c8e6c9;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: var(--font);
+  font-size: 0.71rem;
+  outline: none;
+  background: white;
+  color: #2c2c2c;
+}
+.add-tag-row button {
+  background: var(--green-bd);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 2px 10px;
+  cursor: pointer;
+}
+
+/* ── MIDDLE ROW ── */
+.middle-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 108px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+/* Bambino */
+.bambino-box {
+  background: var(--blue-bg);
+  border: 2px solid var(--blue-bd);
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 9px;
+  padding-bottom: 7px;
+  border-bottom: 1.5px solid rgba(0,0,0,0.08);
+}
+.sec-title { font-size: 0.84rem; font-weight: 800; }
+.nickname-badge {
+  background: var(--yellow);
+  border: 1px solid var(--yel-bd);
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 0.67rem;
+  font-weight: 700;
+  color: var(--yel-tx);
+  cursor: pointer;
+  transition: background .15s;
+}
+.nickname-badge:hover { background: #fff59d; }
+.inner-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+/* Tensione */
+.tensione-box {
+  background: var(--gray-bg);
+  border: 2px solid var(--gray-bd);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.tensione-arrows { font-size: 1.6rem; color: #888; }
+
+/* Ingiuntore */
+.ingiuntore-box {
+  background: var(--red-bg);
+  border: 2px solid var(--red-bd);
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+.badge-right {
+  background: var(--yellow);
+  border: 1px solid var(--yel-bd);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--yel-tx);
+  cursor: pointer;
+}
+.voci-list { display: flex; flex-direction: column; gap: 3px; margin-bottom: 7px; }
+
+/* ── COPING ── */
+.coping-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: #bbb;
+}
+.coping-divider::before, .coping-divider::after { content: ''; flex: 1; height: 1px; background: #e0e0e0; }
+
+.coping-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+.coping-box {
+  border-radius: 8px;
+  padding: 10px 11px;
+  border: 1.5px solid;
+}
+.coping-box-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 7px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+.coping-title { font-size: 0.76rem; font-weight: 800; }
+
+/* Sintomi */
+.sintomi-box {
+  background: #fffde7;
+  border: 1.5px solid var(--yel-bd);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+.sintomi-title {
+  font-size: 0.67rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: #f57f17;
+  margin-bottom: 7px;
+}
+.sintomi-chips { display: flex; flex-wrap: wrap; gap: 5px; min-height: 28px; }
+.sintoma-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(249,168,37,.15);
+  border: 1px solid rgba(249,168,37,.4);
+  border-radius: 20px;
+  padding: 3px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--yel-tx);
+}
+.sintoma-chip .del-chip { cursor: pointer; color: #bbb; display: none; }
+.sintoma-chip:hover .del-chip { display: inline; }
+
+/* ── GENERIC ITEM LIST ── */
+.item-list { display: flex; flex-direction: column; gap: 3px; min-height: 20px; }
+.item-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: #333;
+}
+.item-row::before { content: '—'; color: #bbb; flex-shrink: 0; }
+.item-del {
+  cursor: pointer;
+  color: #ccc;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  margin-left: auto;
+  display: none;
+  flex-shrink: 0;
+}
+.item-row:hover .item-del { display: inline; }
+.item-text { flex: 1; word-break: break-word; }
+
+/* ADD ROW */
+.add-row {
+  display: flex;
+  gap: 5px;
+  margin-top: 7px;
+}
+.add-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px dashed #ccc;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-family: var(--font);
+  font-size: 0.71rem;
+  outline: none;
+  background: rgba(255,255,255,.7);
+  color: #333;
+  transition: border-color .15s;
+}
+.add-row input:focus { border-style: solid; border-color: #999; background: white; }
+.add-row button {
+  border: none;
+  border-radius: 5px;
+  padding: 3px 10px;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  color: white;
+}
+
+/* Bubble lines (editable) */
+.bubble-line-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  font-size: 0.74rem;
+  font-style: italic;
+  color: #555;
+  line-height: 1.5;
+}
+.bubble-line-row::before { content: '"'; color: #bbb; }
+.bubble-del { cursor: pointer; color: #ccc; font-size: 0.8rem; display: none; margin-left: auto; }
+.bubble-line-row:hover .bubble-del { display: inline; }
+
+/* Editable text - click to edit */
+[contenteditable="true"] {
+  outline: none;
+  border-radius: 4px;
+  transition: background .15s;
+  min-width: 30px;
+  display: inline-block;
+  word-break: break-word;
+}
+[contenteditable="true"]:hover { background: rgba(0,0,0,.04); }
+[contenteditable="true"]:focus { background: rgba(255,255,255,.85); box-shadow: 0 0 0 2px rgba(100,100,100,.2); }
+[contenteditable="true"]:empty::before {
+  content: attr(data-ph);
+  color: #bbb;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.edit-hint {
+  font-size: 0.62rem;
+  color: #bbb;
+  font-style: italic;
+  margin-top: 2px;
+  display: block;
+  text-align: center;
+}
+
+/* Inline block for name/title editing */
+.name-editable {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: var(--yel-tx);
+  padding: 2px 8px;
+  width: 100%;
+  text-align: center;
+  display: block;
+}
+
+@media print {
+  body { background: white; padding: 0; }
+  .page { box-shadow: none; border-radius: 0; padding: 12px; }
+  .toolbar, .add-row, .add-tag-row, .item-del, .del-tag, .del-chip, .edit-hint, .badge-del { display: none !important; }
+  .tag .del-tag, .sintoma-chip .del-chip { display: none !important; }
+  [contenteditable] { background: transparent !important; box-shadow: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-title-wrapper">
+      <span class="toolbar-title">Schema Therapy — Mappa delle Modalità</span>
+      <span class="toolbar-credits">Creato da Giuseppe Accogli &copy;</span>
+    </div>
+    <button class="btn btn-gray" onclick="clearAll()">🗑 Nuova sessione</button>
+    <label class="btn btn-gray" title="Carica sessione salvata" style="cursor:pointer">
+      📂 Carica
+      <input type="file" accept=".json" onchange="loadSession(event)" style="display:none">
+    </label>
+    <button class="btn btn-gray" onclick="saveSession()">💾 Salva sessione</button>
+    <button class="btn btn-green" onclick="window.print()">🖨 Stampa / PDF</button>
+  </div>
+
+  <div class="map-grid">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-lbl lbl-cons">Consapevole</div>
+      <div class="sidebar-lbl lbl-impl">Implicito / Automatico</div>
+      <div class="sidebar-lbl lbl-viss">Vissuto</div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+      <!-- ══ SCHEMI ATTIVANTI ══ -->
+      <div style="background:#fffde7;border:2px solid #f9a825;border-radius:10px;padding:12px 14px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+          <div style="font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#f57f17;">⚡ Schemi Maladattativi Precoci attivanti</div>
+          <div style="font-size:0.68rem;color:#b36f00;font-style:italic;">— ciò che innesca tutto il sistema</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;min-height:32px;" id="schemi-list"></div>
+        <div class="add-row" style="margin-top:9px;max-width:520px;">
+          <input id="schemi-input" placeholder="es. Abbandono, Inadeguatezza, Sfiducia, Standard elevati..."
+            onkeydown="if(event.key==='Enter')addSchema()">
+          <button onclick="addSchema()" style="background:#f9a825;color:#5d4000;">+</button>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:1.1rem;color:#f9a825;line-height:1;margin:-2px 0;">↓</div>
+
+      <!-- ══ HEADER ROW ══ -->
+      <div class="header-row">
+
+        <!-- Bubble SX -->
+        <div class="bubble-wrap">
+          <div class="bubble left">
+            <div class="bubble-lines" id="bubble-sx-list"></div>
+            <div class="add-row" style="margin-top:6px">
+              <input id="bubble-sx-input" placeholder="Aggiungi frase dell'AS..." onkeydown="if(event.key==='Enter')addBubbleLine('sx')">
+              <button onclick="addBubbleLine('sx')" style="background:#888">+</button>
+            </div>
+          </div>
+          <span class="edit-hint">← frasi dell'Adulto Sano</span>
+        </div>
+
+        <!-- NOME + ADULTO SANO -->
+        <div class="adulto-wrap">
+          <div class="name-badge">
+            <span class="name-editable" contenteditable="true" data-ph="NOME PAZIENTE">&#8203;</span>
+          </div>
+          <div class="adulto-box">
+            <div class="adulto-box-title">Adulto Sano</div>
+            <div style="font-size:0.68rem;color:#388e3c;font-style:italic;text-align:center;margin-bottom:8px;line-height:1.5;">La parte di te che si prende cura, prende decisioni equilibrate e sa consolare il bambino interiore.</div>
+            <div class="tags-container" id="adulto-tags"></div>
+            <div class="add-tag-row">
+              <input id="adulto-tag-input" placeholder="+ tratto / risorsa" onkeydown="if(event.key==='Enter')addAdultoTag()">
+              <button onclick="addAdultoTag()">+</button>
+            </div>
+          </div>
+          <span class="edit-hint">↑ clicca per modificare</span>
+        </div>
+
+        <!-- Bubble DX -->
+        <div class="bubble-wrap" style="display:flex;flex-direction:column;align-items:flex-end;gap:7px">
+          <div class="bubble right" style="text-align:right">
+            <div class="bubble-lines" id="bubble-dx-list"></div>
+            <div class="add-row" style="margin-top:6px">
+              <input id="bubble-dx-input" placeholder="STOP! / ammonimento..." onkeydown="if(event.key==='Enter')addBubbleLine('dx')">
+              <button onclick="addBubbleLine('dx')" style="background:#c62828">+</button>
+            </div>
+          </div>
+          <div>
+            <span class="badge-right" id="moralizzatore-badge"
+              onclick="editBadge('moralizzatore-badge','Nome ingiuntore')"
+              title="Clicca per rinominare"
+              contenteditable="false">
+              NOME INGIUNTORE
+            </span>
+          </div>
+          <span class="edit-hint" style="text-align:right">frasi del Critico Interno →</span>
+        </div>
+
+      </div>
+
+      <!-- ══ MIDDLE ROW ══ -->
+      <div class="middle-row">
+
+        <!-- BAMBINO: due sotto-riquadri -->
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <!-- Bambino Vulnerabile -->
+          <div class="bambino-box">
+            <div class="section-head">
+              <span class="sec-title" style="color:var(--blue-tx)">Bambino Vulnerabile</span>
+              <span class="nickname-badge" onclick="editBadge(this,'Soprannome')" title="Soprannome">SOPRANNOME</span>
+            </div>
+            <div style="font-size:0.67rem;color:#5c7dab;font-style:italic;margin-bottom:9px;line-height:1.5;">La parte più fragile: sente dolore, paura, solitudine. Porta i bisogni emotivi che non sono stati soddisfatti nell'infanzia. È il bersaglio principale della voce critica interna.</div>
+
+            <!-- Vissuto emotivo -->
+            <div style="background:rgba(255,255,255,.6);border-radius:6px;padding:8px 10px;border:1px solid rgba(0,0,0,.06);margin-bottom:8px">
+              <div style="font-size:0.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:5px">Vissuto emotivo</div>
+              <div class="item-list" id="bambino-neg-list"></div>
+              <div class="add-row">
+                <input id="bambino-neg-input" placeholder="es. solo, inadeguato, non visto, ansioso..." onkeydown="if(event.key==='Enter')addItem('bambino-neg-list','bambino-neg-input','#1565c0')">
+                <button onclick="addItem('bambino-neg-list','bambino-neg-input','#1565c0')" style="background:#90caf9;color:#0d47a1">+</button>
+              </div>
+            </div>
+
+            <!-- Risorse -->
+            <div style="background:rgba(255,255,255,.6);border-radius:6px;padding:8px 10px;border:1px solid rgba(0,0,0,.06)">
+              <div style="font-size:0.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:5px">Risorse / Piacere</div>
+              <div class="item-list" id="bambino-pos-list"></div>
+              <div class="add-row">
+                <input id="bambino-pos-input" placeholder="es. gioia, estate..." onkeydown="if(event.key==='Enter')addItem('bambino-pos-list','bambino-pos-input','#2e7d32')">
+                <button onclick="addItem('bambino-pos-list','bambino-pos-input','#2e7d32')" style="background:#a5d6a7;color:#1b5e20">+</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bambino Arrabbiato -->
+          <div style="background:#fff8f0;border:2px solid var(--orange-border,#ffcc80);border-radius:10px;padding:11px 13px;">
+            <div class="section-head">
+              <span class="sec-title" style="color:#e65100">Bambino Arrabbiato</span>
+              <span class="nickname-badge" style="border-color:#ffcc80;color:#8a5010" onclick="editBadge(this,'Soprannome')" title="Soprannome">SOPRANNOME</span>
+            </div>
+            <div style="font-size:0.67rem;color:#e65100;font-style:italic;margin-bottom:9px;line-height:1.5;">Reagisce con rabbia quando i bisogni non vengono soddisfatti o i limiti vengono violati. È una risposta di difesa del bambino vulnerabile.</div>
+            <div style="background:rgba(230,81,0,.06);border-radius:6px;padding:8px 10px;border:1px solid rgba(230,81,0,.15)">
+              <div style="font-size:0.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#e65100;margin-bottom:5px">Rabbia / Disregolazione</div>
+              <div class="item-list" id="bambino-rabbia-list"></div>
+              <div class="add-row">
+                <input id="bambino-rabbia-input" placeholder="es. esplosioni, impulsività, reazioni..." onkeydown="if(event.key==='Enter')addItem('bambino-rabbia-list','bambino-rabbia-input','#e65100')">
+                <button onclick="addItem('bambino-rabbia-list','bambino-rabbia-input','#e65100')" style="background:#ffcc80;color:#e65100">+</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TENSIONE -->
+        <div class="tensione-box">
+          <div class="tensione-arrows">⇄</div>
+          <div style="font-size:0.78rem;font-weight:800;color:#555">Tensione</div>
+          <div style="font-size:0.69rem;color:#777;font-style:italic;line-height:1.5" contenteditable="true" data-ph='"Frase..."'></div>
+        </div>
+
+        <!-- INGIUNTORE / CRITICO -->
+        <div class="ingiuntore-box">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:7px;border-bottom:1.5px solid rgba(0,0,0,.08)">
+            <span class="sec-title" style="color:var(--red-tx)">Ingiuntore / Critico</span>
+            <span class="badge-right" id="critico-badge"
+              onclick="editBadge('critico-badge','Nome critico')"
+              title="Clicca per rinominare"
+              contenteditable="false">
+              NOME
+            </span>
+          </div>
+          <div style="font-size:0.67rem;color:#e57373;font-style:italic;margin-bottom:9px;line-height:1.5;">La voce interna critica e punitiva, interiorizzata da figure significative dell'infanzia. Nasce con uno scopo: il bambino impara a criticarsi da solo per anticipare la punizione o il rifiuto degli altri — una strategia che da piccolo dava un senso di controllo e riduceva il rischio di conseguenze peggiori. In questo senso, il critico cercava di aiutare il bambino a sopravvivere in un ambiente difficile. In età adulta, però, quella voce continua ad attivarsi automaticamente anche quando la minaccia non c'è più, diventando disfunzionale: il bambino vulnerabile la sente come una verità su sé stesso e, non avendo avuto da piccolo gli strumenti per metterla in discussione, l'ha creduta. Il risultato è vergogna e senso di colpa. Altre volte il bambino si ribella con rabbia, perché sente che i suoi bisogni non vengono riconosciuti. Più questa voce è forte, più il bambino soffre.</div>
+          <div style="background:rgba(183,28,28,.06);border-radius:6px;padding:8px 10px;border:1px solid rgba(183,28,28,.15);margin-bottom:9px;">
+            <div style="font-size:0.63rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#c62828;margin-bottom:4px;">Scopo originario</div>
+            <div style="font-size:0.63rem;color:#b71c1c;font-style:italic;margin-bottom:6px;">A cosa serviva questa voce? Cosa cercava di proteggere?</div>
+            <div class="item-list" id="critico-scopo-list"></div>
+            <div class="add-row">
+              <input id="critico-scopo-input" placeholder="es. evitare la punizione, ottenere approvazione..." onkeydown="if(event.key==='Enter')addItem('critico-scopo-list','critico-scopo-input','#b71c1c')">
+              <button onclick="addItem('critico-scopo-list','critico-scopo-input','#b71c1c')" style="background:#ef9a9a;color:#b71c1c">+</button>
+            </div>
+          </div>
+          <div class="item-list" id="critico-list" style="margin-bottom:7px"></div>
+          <div class="add-row">
+            <input id="critico-input" placeholder="Aggiungi voce critica interna..." onkeydown="if(event.key==='Enter')addItem('critico-list','critico-input','#b71c1c')">
+            <button onclick="addItem('critico-list','critico-input','#b71c1c')" style="background:#ef9a9a;color:#b71c1c">+</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══ COPING LABEL ══ -->
+      <div class="coping-divider">Modes di Coping</div>
+
+      <!-- ══ COPING ROW ══ -->
+      <div class="coping-row">
+
+        <!-- SOTTOMISSIONE -->
+        <div class="coping-box" style="background:var(--blue-bg);border-color:var(--blue-bd)">
+          <div class="coping-box-title-row">
+            <span class="coping-title" style="color:var(--blue-tx)">Sottomissione</span>
+            <span class="nickname-badge" style="font-size:.6rem" onclick="editBadge(this,'Soprannome')" title="Soprannome">NOME</span>
+          </div>
+          <div class="item-list" id="coping-1-list"></div>
+          <div class="add-row">
+            <input id="coping-1-input" placeholder="comportamento..." onkeydown="if(event.key==='Enter')addItem('coping-1-list','coping-1-input','var(--blue-tx)')">
+            <button onclick="addItem('coping-1-list','coping-1-input','var(--blue-tx)')" style="background:var(--blue-bd);color:var(--blue-tx)">+</button>
+          </div>
+        </div>
+
+        <!-- PROTETTORE DISTACCATO -->
+        <div class="coping-box" style="background:var(--purple-bg);border-color:var(--purple-bd)">
+          <div class="coping-box-title-row">
+            <span class="coping-title" style="color:var(--purple-tx)">Protettore dist.</span>
+            <span class="nickname-badge" style="font-size:.6rem" onclick="editBadge(this,'Soprannome')" title="Soprannome">NOME</span>
+          </div>
+          <div class="item-list" id="coping-2-list"></div>
+          <div class="add-row">
+            <input id="coping-2-input" placeholder="comportamento..." onkeydown="if(event.key==='Enter')addItem('coping-2-list','coping-2-input','var(--purple-tx)')">
+            <button onclick="addItem('coping-2-list','coping-2-input','var(--purple-tx)')" style="background:var(--purple-bd);color:var(--purple-tx)">+</button>
+          </div>
+        </div>
+
+        <!-- AUTOTRANQUILLIZZAZIONE -->
+        <div class="coping-box" style="background:var(--teal-bg);border-color:var(--teal-bd)">
+          <div class="coping-box-title-row">
+            <span class="coping-title" style="color:var(--teal-tx)">Autotranquill.</span>
+            <span class="nickname-badge" style="font-size:.6rem" onclick="editBadge(this,'Soprannome')" title="Soprannome">NOME</span>
+          </div>
+          <div class="item-list" id="coping-3-list"></div>
+          <div class="add-row">
+            <input id="coping-3-input" placeholder="comportamento..." onkeydown="if(event.key==='Enter')addItem('coping-3-list','coping-3-input','var(--teal-tx)')">
+            <button onclick="addItem('coping-3-list','coping-3-input','var(--teal-tx)')" style="background:var(--teal-bd);color:var(--teal-tx)">+</button>
+          </div>
+        </div>
+
+        <!-- IPERCOMPENSAZIONE -->
+        <div class="coping-box" style="background:var(--red-bg);border-color:var(--red-bd)">
+          <div class="coping-box-title-row">
+            <span class="coping-title" style="color:var(--red-tx)">Ipercompensazione</span>
+            <span class="nickname-badge" style="font-size:.6rem" onclick="editBadge(this,'Soprannome')" title="Soprannome">NOME</span>
+          </div>
+          <div class="item-list" id="coping-4-list"></div>
+          <div class="add-row">
+            <input id="coping-4-input" placeholder="comportamento..." onkeydown="if(event.key==='Enter')addItem('coping-4-list','coping-4-input','var(--red-tx)')">
+            <button onclick="addItem('coping-4-list','coping-4-input','var(--red-tx)')" style="background:var(--red-bd);color:var(--red-tx)">+</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ══ SINTOMI ══ -->
+      <div class="sintomi-box">
+        <div class="sintomi-title">Sintomi</div>
+        <div class="sintomi-chips" id="sintomi-list"></div>
+        <div class="add-row" style="margin-top:8px">
+          <input id="sintomi-input" placeholder="Aggiungi sintomo..." onkeydown="if(event.key==='Enter')addSintoma()">
+          <button onclick="addSintoma()" style="background:var(--yel-bd);color:var(--yel-tx)">+</button>
+        </div>
+      </div>
+
+    </div><!-- end main -->
+  </div><!-- end map-grid -->
+
+</div><!-- end page -->
+
+<script>
+// ── ITEM LISTS ──
+function addItem(listId, inputId, color) {
+  const input = document.getElementById(inputId);
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById(listId);
+  const row = document.createElement('div');
+  row.className = 'item-row';
+  row.innerHTML = `<span class="item-text" style="color:${color}">${val}</span><span class="item-del" onclick="this.parentNode.remove()">✕</span>`;
+  list.appendChild(row);
+  input.value = '';
+  input.focus();
+}
+
+// ── BUBBLE LINES ──
+function addBubbleLine(side) {
+  const input = document.getElementById(`bubble-${side}-input`);
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById(`bubble-${side}-list`);
+  const row = document.createElement('div');
+  row.className = 'bubble-line-row';
+  const align = side === 'dx' ? 'text-align:right' : '';
+  row.innerHTML = `<span class="item-text" style="${align}">${val}</span><span class="bubble-del" onclick="this.parentNode.remove()">✕</span>`;
+  list.appendChild(row);
+  input.value = '';
+  input.focus();
+}
+
+// ── ADULTO SANO TAGS ──
+function addAdultoTag() {
+  const input = document.getElementById('adulto-tag-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const container = document.getElementById('adulto-tags');
+  const tag = document.createElement('span');
+  tag.className = 'tag';
+  tag.innerHTML = `${val}<span class="del-tag" onclick="this.parentNode.remove()">✕</span>`;
+  container.appendChild(tag);
+  input.value = '';
+  input.focus();
+}
+
+// ── SCHEMI ──
+function addSchema() {
+  const input = document.getElementById('schemi-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById('schemi-list');
+  const chip = document.createElement('span');
+  chip.className = 'sintoma-chip';
+  chip.style.cssText = 'background:rgba(249,168,37,.2);border-color:rgba(249,168,37,.6);font-size:0.76rem;padding:4px 14px;';
+  chip.innerHTML = `${val}<span class="del-chip" onclick="this.parentNode.remove()">✕</span>`;
+  list.appendChild(chip);
+  input.value = '';
+  input.focus();
+}
+
+
+function addSintoma() {
+  const input = document.getElementById('sintomi-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const list = document.getElementById('sintomi-list');
+  const chip = document.createElement('span');
+  chip.className = 'sintoma-chip';
+  chip.innerHTML = `${val}<span class="del-chip" onclick="this.parentNode.remove()">✕</span>`;
+  list.appendChild(chip);
+  input.value = '';
+  input.focus();
+}
+
+// ── BADGE EDIT ──
+function editBadge(elOrId, placeholder) {
+  const el = typeof elOrId === 'string' ? document.getElementById(elOrId) : elOrId;
+  el.contentEditable = 'true';
+  el.focus();
+  const sel = window.getSelection();
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  el.addEventListener('blur', () => { el.contentEditable = 'false'; }, { once: true });
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+  }, { once: true });
+}
+
+// ── SAVE SESSION ──
+function saveSession() {
+  const data = {};
+
+  // Name
+  const nameEl = document.querySelector('.name-editable');
+  data.name = nameEl ? nameEl.innerText.trim() : '';
+
+  // Adulto tags
+  data.adultoTags = [...document.querySelectorAll('#adulto-tags .tag')].map(t => t.childNodes[0].textContent.trim());
+
+  // Bubbles
+  data.bubbleSx = [...document.querySelectorAll('#bubble-sx-list .item-text')].map(e => e.textContent.trim());
+  data.bubbleDx = [...document.querySelectorAll('#bubble-dx-list .item-text')].map(e => e.textContent.trim());
+
+  // Badges
+  data.moralizzatore = document.getElementById('moralizzatore-badge')?.textContent.trim();
+  data.criticoBadge  = document.getElementById('critico-badge')?.textContent.trim();
+
+  // Bambino nickname
+  data.bambinoNick = document.querySelector('.bambino-box .nickname-badge')?.textContent.trim();
+
+  // Tensione testo
+  data.tensioneTesto = document.querySelector('.tensione-box [contenteditable]')?.innerText.trim();
+
+  // Item lists
+  const listIds = ['bambino-neg','bambino-pos','bambino-rabbia','critico-scopo','critico','coping-1','coping-2','coping-3','coping-4'];
+  listIds.forEach(id => {
+    data[id] = [...document.querySelectorAll(`#${id}-list .item-text`)].map(e => e.textContent.trim());
+  });
+
+  // Coping nicknames
+  data.copingNicks = [...document.querySelectorAll('.coping-box .nickname-badge')].map(e => e.textContent.trim());
+
+  // Sintomi
+  data.sintomi = [...document.querySelectorAll('#sintomi-list .sintoma-chip')].map(e => e.childNodes[0].textContent.trim());
+
+  // Schemi
+  data.schemi = [...document.querySelectorAll('#schemi-list .sintoma-chip')].map(e => e.childNodes[0].textContent.trim());
+
+  const filename = (data.name || 'paziente').replace(/\s+/g,'_').toLowerCase() + '_schema_therapy.json';
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+// ── LOAD SESSION ──
+function loadSession(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      clearAll(true); // silent clear
+
+      // Name
+      const nameEl = document.querySelector('.name-editable');
+      if (nameEl && data.name) nameEl.innerText = data.name;
+
+      // Adulto tags
+      (data.adultoTags || []).forEach(t => {
+        document.getElementById('adulto-tag-input').value = t;
+        addAdultoTag();
+      });
+
+      // Bubbles
+      (data.bubbleSx || []).forEach(t => { document.getElementById('bubble-sx-input').value = t; addBubbleLine('sx'); });
+      (data.bubbleDx || []).forEach(t => { document.getElementById('bubble-dx-input').value = t; addBubbleLine('dx'); });
+
+      // Badges
+      if (data.moralizzatore) document.getElementById('moralizzatore-badge').textContent = data.moralizzatore;
+      if (data.criticoBadge)  document.getElementById('critico-badge').textContent = data.criticoBadge;
+      if (data.bambinoNick)   document.querySelector('.bambino-box .nickname-badge').textContent = data.bambinoNick;
+
+      // Tensione
+      const tensEl = document.querySelector('.tensione-box [contenteditable]');
+      if (tensEl && data.tensioneTesto) tensEl.innerText = data.tensioneTesto;
+
+      // Item lists
+      const colorMap = {
+        'bambino-neg': '#c62828', 'bambino-pos': '#2e7d32', 'bambino-rabbia': '#b71c1c',
+        'critico-scopo': '#b71c1c', 'critico': '#b71c1c', 'coping-1': 'var(--blue-tx)', 'coping-2': 'var(--purple-tx)',
+        'coping-3': 'var(--teal-tx)', 'coping-4': 'var(--red-tx)'
+      };
+      Object.keys(colorMap).forEach(id => {
+        (data[id] || []).forEach(val => {
+          document.getElementById(`${id}-input`).value = val;
+          addItem(`${id}-list`, `${id}-input`, colorMap[id]);
+        });
+      });
+
+      // Coping nicknames
+      const copingBadges = document.querySelectorAll('.coping-box .nickname-badge');
+      (data.copingNicks || []).forEach((nick, i) => { if (copingBadges[i]) copingBadges[i].textContent = nick; });
+
+      // Sintomi
+      (data.sintomi || []).forEach(s => { document.getElementById('sintomi-input').value = s; addSintoma(); });
+
+      // Schemi
+      (data.schemi || []).forEach(s => { document.getElementById('schemi-input').value = s; addSchema(); });
+
+    } catch(err) { alert('File non valido o corrotto.'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ── CLEAR ALL ──
+function clearAll(silent) {
+  if (!silent && !confirm('Cancellare tutti i dati per iniziare una nuova sessione?')) return;
+  const lists = ['bubble-sx-list','bubble-dx-list','adulto-tags',
+    'bambino-neg-list','bambino-pos-list','bambino-rabbia-list',
+    'critico-scopo-list','critico-list','coping-1-list','coping-2-list','coping-3-list','coping-4-list','sintomi-list','schemi-list'];
+  lists.forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = ''; });
+  document.querySelectorAll('[contenteditable="true"]').forEach(el => el.innerHTML = '');
+  ['moralizzatore-badge','critico-badge'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = 'NOME'; }
+  });
+  document.querySelectorAll('.nickname-badge').forEach(el => el.textContent = 'NOME');
+}
+</script>
+</body>
+</html>
