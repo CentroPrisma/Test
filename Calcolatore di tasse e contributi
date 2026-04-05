@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Calcolatore Tasse Psicologi - Regime Forfettario</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- html2canvas -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #0f172a; /* Slate-900 per un tono leggermente più professionale del Gray */
+      }
+      @keyframes fade-in {
+          from { opacity: 0; transform: translateY(15px); }
+          to { opacity: 1; transform: translateY(0); }
+      }
+      .animate-fade-in {
+        animation: fade-in 0.4s ease-out forwards;
+      }
+      /* Nascondere frecce input number */
+      input::-webkit-outer-spin-button,
+      input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      input[type=number] {
+        -moz-appearance: textfield;
+      }
+      
+      /* Stile per i Tooltip personalizzati */
+      .tooltip-container .tooltip-text {
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .tooltip-container:hover .tooltip-text {
+        visibility: visible;
+        opacity: 1;
+      }
+    </style>
+</head>
+<body class="text-slate-200 selection:bg-indigo-500 selection:text-white">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Logica di Calcolo ---
+        const COEFFICIENTE_REDDITIVITA = 0.78;
+
+        const calculateTaxes = (inputs) => {
+            const {
+                regimeForfettario,
+                fatturatoLordoOneYearAgo,
+                tassePagateOneYearAgo,
+                contributiEnpapOneYearAgo,
+                fatturatoLordoTwoYearsAgo,
+                contributiEnpapTwoYearsAgo,
+            } = inputs;
+
+            // 1. Acconto ENPAP (1 Marzo)
+            const contributoIntegrativo2_Y2 = Math.max(0, fatturatoLordoTwoYearsAgo - (fatturatoLordoTwoYearsAgo / 1.02));
+            const imponibilePrevidenziale_Y2 = Math.max(0, (fatturatoLordoTwoYearsAgo * COEFFICIENTE_REDDITIVITA) - contributiEnpapTwoYearsAgo);
+            const contributoSoggettivo10_Y2 = imponibilePrevidenziale_Y2 * 0.10;
+            
+            const acconto2perc = contributoIntegrativo2_Y2 * 0.70;
+            const acconto10perc = contributoSoggettivo10_Y2 * 0.70;
+            const maternita = 110;
+            const totaleAccontoEnpap = acconto2perc + acconto10perc + maternita;
+
+            // 2. Imposte Sostitutive (Giugno)
+            const imponibileFiscale_Y1 = Math.max(0, (fatturatoLordoOneYearAgo * COEFFICIENTE_REDDITIVITA) - contributiEnpapOneYearAgo);
+            const impostaDovuta_Y1 = imponibileFiscale_Y1 * (regimeForfettario / 100);
+            
+            const saldoImposta_Y1 = impostaDovuta_Y1 - tassePagateOneYearAgo;
+            const primoAccontoImposta = impostaDovuta_Y1 * 0.40;
+            const totaleGiugno = saldoImposta_Y1 + primoAccontoImposta;
+            
+            // 3. Saldo ENPAP (Ottobre)
+            const saldoIntegrativo2 = Math.max(0, fatturatoLordoOneYearAgo - (fatturatoLordoOneYearAgo / 1.02));
+            const imponibilePrevidenziale_Y1 = Math.max(0, (fatturatoLordoOneYearAgo * COEFFICIENTE_REDDITIVITA) - contributiEnpapOneYearAgo);
+            const saldoSoggettivo10 = imponibilePrevidenziale_Y1 * 0.10;
+            
+            const totaleSaldoEnpap = saldoIntegrativo2 + saldoSoggettivo10 - totaleAccontoEnpap;
+
+            // 4. II Acconto (Novembre)
+            const impostaSostitutivaNovembre = impostaDovuta_Y1 * 0.60;
+
+            // Totali e Statistiche per UX
+            const totaleImposte = totaleGiugno + impostaSostitutivaNovembre;
+            const totaleEnpap = totaleAccontoEnpap + totaleSaldoEnpap;
+            const totaleGenerale = totaleImposte + totaleEnpap;
+            
+            // Stima netto in tasca (Riferito all'anno Y-1, le tasse effettivamente dovute su di esso)
+            const tasseRealiY1 = impostaDovuta_Y1;
+            const enpapRealeY1 = saldoIntegrativo2 + saldoSoggettivo10 + maternita;
+            const nettoRealeY1 = fatturatoLordoOneYearAgo - tasseRealiY1 - enpapRealeY1;
+            const pressioneFiscale = fatturatoLordoOneYearAgo > 0 ? ((tasseRealiY1 + enpapRealeY1) / fatturatoLordoOneYearAgo) * 100 : 0;
+
+            return {
+                accontoEnpap: {
+                    contributo2percent: acconto2perc,
+                    contributo10percent: acconto10perc,
+                    contributoMaternita: maternita,
+                    totale: totaleAccontoEnpap,
+                },
+                impostaSostitutivaGiugno: {
+                    saldoAnnoPrecedente: saldoImposta_Y1,
+                    accontoAnnoCorrente: primoAccontoImposta,
+                    totale: totaleGiugno
+                },
+                saldoEnpap: {
+                    contributo2percent: saldoIntegrativo2,
+                    contributo10percent: saldoSoggettivo10,
+                    accontoVersato: totaleAccontoEnpap,
+                    totale: totaleSaldoEnpap,
+                },
+                impostaSostitutivaNovembre: impostaSostitutivaNovembre < 0 ? 0 : impostaSostitutivaNovembre,
+                statistiche: {
+                    totaleDaPagare: totaleGenerale,
+                    totaleImposte: totaleImposte,
+                    totaleEnpap: totaleEnpap,
+                    nettoRealeY1: nettoRealeY1,
+                    pressioneFiscale: pressioneFiscale
+                }
+            };
+        };
+
+        // --- UI Icons ---
+        const InfoIcon = () => (
+            <svg className="w-4 h-4 text-slate-500 hover:text-indigo-400 cursor-help" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+        );
+
+        // --- Custom Components ---
+        const LabelWithTooltip = ({ label, tooltip }) => (
+            <div className="flex items-center gap-2 mb-1 tooltip-container relative inline-block">
+                <label className="text-sm font-medium text-slate-400">{label}</label>
+                {tooltip && (
+                    <>
+                        <InfoIcon />
+                        <div className="tooltip-text absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-2 bg-slate-800 text-xs text-slate-300 rounded-lg shadow-xl border border-slate-700 z-10 text-center">
+                            {tooltip}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800"></div>
+                        </div>
+                    </>
+                )}
+            </div>
+        );
+
+        const CurrencyInput = ({ id, label, tooltip, value, onChange }) => (
+            <div className="flex flex-col">
+                <LabelWithTooltip label={label} tooltip={tooltip} />
+                <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 font-medium">€</span>
+                    <input
+                        id={id}
+                        type="number"
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder="0"
+                        className="w-full bg-slate-800/50 border border-slate-700 rounded-lg pl-8 pr-3 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all shadow-sm"
+                    />
+                </div>
+            </div>
+        );
+
+        const ResultsCard = ({ title, subtitle, amount, details, colorTheme }) => {
+            const formatCurrency = (val) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
+            const isCredit = amount < 0;
+            
+            // Themes map
+            const themes = {
+                green: "text-emerald-400 border-emerald-500/20 bg-emerald-500/5",
+                orange: "text-amber-400 border-amber-500/20 bg-amber-500/5",
+            };
+            const themeClass = themes[colorTheme] || "text-white border-slate-700 bg-slate-800";
+            
+            return (
+                <div className={`p-5 rounded-2xl border flex flex-col h-full hover:bg-slate-800/80 transition-all shadow-sm ${themeClass}`}>
+                    <div className="mb-4">
+                        <h3 className="text-lg font-bold">{title}</h3>
+                        <p className="text-sm opacity-80 mt-1">{subtitle}</p>
+                    </div>
+                    <div className="text-3xl font-black text-white mb-6 tracking-tight flex items-center gap-3">
+                        {formatCurrency(amount)}
+                        {isCredit && <span className="text-xs font-bold tracking-wider bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-md border border-emerald-500/30 uppercase">Credito</span>}
+                    </div>
+                    <div className="mt-auto space-y-3 text-sm border-t border-white/10 pt-4">
+                        {details.map((d, i) => (
+                            <div key={i} className="flex justify-between items-center">
+                                <span className="text-slate-400">{d.label}</span>
+                                <span className={`font-medium ${d.isNegative ? 'text-emerald-400' : 'text-slate-200'}`}>
+                                    {d.isNegative ? '-' : ''}{formatCurrency(Math.abs(d.value))}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        const ProgressBar = ({ imposte, enpap, totale }) => {
+            const percImposte = totale > 0 ? (imposte / totale) * 100 : 0;
+            const percEnpap = totale > 0 ? (enpap / totale) * 100 : 0;
+            
+            return (
+                <div className="mt-6 mb-8">
+                    <div className="flex justify-between text-xs font-medium mb-2">
+                        <span className="text-amber-400">Imposte Sostitutive ({percImposte.toFixed(0)}%)</span>
+                        <span className="text-emerald-400">ENPAP ({percEnpap.toFixed(0)}%)</span>
+                    </div>
+                    <div className="h-3 w-full bg-slate-800 rounded-full overflow-hidden flex">
+                        <div className="bg-amber-400 h-full transition-all duration-1000" style={{ width: `${percImposte}%` }}></div>
+                        <div className="bg-emerald-400 h-full transition-all duration-1000" style={{ width: `${percEnpap}%` }}></div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App ---
+        const App = () => {
+            const [view, setView] = useState('form');
+            const [taxYear, setTaxYear] = useState(new Date().getFullYear());
+            const [regime, setRegime] = useState(5);
+            
+            // Dati
+            const [lordoY1, setLordoY1] = useState('');
+            const [tasseY1, setTasseY1] = useState('');
+            const [enpapY1, setEnpapY1] = useState('');
+            const [lordoY2, setLordoY2] = useState('');
+            const [enpapY2, setEnpapY2] = useState('');
+
+            const [result, setResult] = useState(null);
+            const resultsRef = useRef(null);
+
+            // LocalStorage: Caricamento dati salvati
+            useEffect(() => {
+                const savedData = localStorage.getItem('psicoTasseData');
+                if (savedData) {
+                    try {
+                        const parsed = JSON.parse(savedData);
+                        if (parsed.taxYear) setTaxYear(parsed.taxYear);
+                        if (parsed.regime) setRegime(parsed.regime);
+                        if (parsed.lordoY1) setLordoY1(parsed.lordoY1);
+                        if (parsed.tasseY1) setTasseY1(parsed.tasseY1);
+                        if (parsed.enpapY1) setEnpapY1(parsed.enpapY1);
+                        if (parsed.lordoY2) setLordoY2(parsed.lordoY2);
+                        if (parsed.enpapY2) setEnpapY2(parsed.enpapY2);
+                    } catch (e) {
+                        console.error("Errore nel parsing del localStorage", e);
+                    }
+                }
+            }, []);
+
+            // LocalStorage: Salvataggio automatico
+            useEffect(() => {
+                const dataToSave = { taxYear, regime, lordoY1, tasseY1, enpapY1, lordoY2, enpapY2 };
+                localStorage.setItem('psicoTasseData', JSON.stringify(dataToSave));
+            }, [taxYear, regime, lordoY1, tasseY1, enpapY1, lordoY2, enpapY2]);
+
+            const isFormValid = lordoY1 !== '' && tasseY1 !== '' && enpapY1 !== '' && lordoY2 !== '' && enpapY2 !== '';
+
+            const handleCalculate = () => {
+                const res = calculateTaxes({
+                    regimeForfettario: regime,
+                    fatturatoLordoOneYearAgo: parseFloat(lordoY1) || 0,
+                    tassePagateOneYearAgo: parseFloat(tasseY1) || 0,
+                    contributiEnpapOneYearAgo: parseFloat(enpapY1) || 0,
+                    fatturatoLordoTwoYearsAgo: parseFloat(lordoY2) || 0,
+                    contributiEnpapTwoYearsAgo: parseFloat(enpapY2) || 0,
+                });
+                setResult(res);
+                setView('result');
+                window.scrollTo(0,0);
+            };
+
+            const clearData = () => {
+                if(window.confirm("Sei sicuro di voler cancellare tutti i dati inseriti?")) {
+                    setLordoY1(''); setTasseY1(''); setEnpapY1(''); setLordoY2(''); setEnpapY2('');
+                    setTaxYear(new Date().getFullYear());
+                    localStorage.removeItem('psicoTasseData');
+                }
+            };
+
+            const saveImage = () => {
+                if (resultsRef.current) {
+                    html2canvas(resultsRef.current, { backgroundColor: '#0f172a', scale: 2 }).then(canvas => {
+                        const link = document.createElement('a');
+                        link.download = `Riepilogo_Tasse_Psicologo_${taxYear}.png`;
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                    });
+                }
+            };
+
+            const formatCurrency = (val) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
+
+            // Renderizzazione della vista "Risultati"
+            if (view === 'result' && result) {
+                return (
+                    <div className="min-h-screen p-4 md:p-8 flex flex-col items-center animate-fade-in font-sans">
+                        <div ref={resultsRef} className="w-full max-w-6xl bg-slate-900 p-6 md:p-10 rounded-3xl border border-slate-800 shadow-2xl">
+                            
+                            <header className="text-center mb-10">
+                                <h1 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 mb-2">
+                                    Pianificazione Fiscale {taxYear}
+                                </h1>
+                                <p className="text-slate-400 font-medium">Regime Forfettario al {regime}% • Psicologi (Ateco 78%)</p>
+                            </header>
+
+                            {/* Sezione Grand Total & Netto Reale */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                                <div className="bg-gradient-to-br from-indigo-900/50 to-slate-900 p-6 rounded-2xl border border-indigo-500/30">
+                                    <h2 className="text-indigo-300 font-semibold mb-1">Totale da Versare nell'Anno</h2>
+                                    <p className="text-4xl md:text-5xl font-black text-white mb-2">{formatCurrency(result.statistiche.totaleDaPagare)}</p>
+                                    <p className="text-sm text-slate-400">Somma di tutte le scadenze Fisco + ENPAP previste per il {taxYear}.</p>
+                                    
+                                    <ProgressBar 
+                                        imposte={result.statistiche.totaleImposte} 
+                                        enpap={result.statistiche.totaleEnpap} 
+                                        totale={result.statistiche.totaleDaPagare} 
+                                    />
+                                </div>
+
+                                <div className="bg-gradient-to-br from-slate-800/80 to-slate-900 p-6 rounded-2xl border border-slate-700">
+                                    <h2 className="text-slate-300 font-semibold mb-1">Analisi Anno {taxYear - 1} (Passato)</h2>
+                                    <div className="flex items-end gap-3 mb-4">
+                                        <p className="text-3xl font-bold text-white">{formatCurrency(result.statistiche.nettoRealeY1)}</p>
+                                        <p className="text-sm text-slate-400 mb-1">Netto reale stimato</p>
+                                    </div>
+                                    <div className="space-y-2 text-sm text-slate-300">
+                                        <div className="flex justify-between"><span>Fatturato lordo:</span> <span>{formatCurrency(lordoY1)}</span></div>
+                                        <div className="flex justify-between"><span>Pressione fiscale reale:</span> <span className="text-rose-400 font-semibold">{result.statistiche.pressioneFiscale.toFixed(1)}%</span></div>
+                                        <p className="text-xs text-slate-500 italic mt-2">*Il netto reale esclude eventuali altre spese deducibili o personali.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h3 className="text-xl font-bold text-white mb-6 px-2">Dettaglio Scadenze {taxYear}</h3>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <ResultsCard 
+                                    title="I Acconto ENPAP"
+                                    subtitle={`1 Marzo ${taxYear}`}
+                                    amount={result.accontoEnpap.totale}
+                                    colorTheme="green"
+                                    details={[
+                                        { label: "Integrativo (2%)", value: result.accontoEnpap.contributo2percent },
+                                        { label: "Soggettivo (10%)", value: result.accontoEnpap.contributo10percent },
+                                        { label: "Maternità fissa", value: result.accontoEnpap.contributoMaternita }
+                                    ]}
+                                />
+                                <ResultsCard 
+                                    title="Imposta Sostitutiva"
+                                    subtitle={`30 Giugno ${taxYear}`}
+                                    amount={result.impostaSostitutivaGiugno.totale}
+                                    colorTheme="orange"
+                                    details={[
+                                        { label: `Saldo ${taxYear-1}`, value: result.impostaSostitutivaGiugno.saldoAnnoPrecedente },
+                                        { label: `I Acconto ${taxYear}`, value: result.impostaSostitutivaGiugno.accontoAnnoCorrente }
+                                    ]}
+                                />
+                                <ResultsCard 
+                                    title="Saldo ENPAP"
+                                    subtitle={`1 Ottobre ${taxYear}`}
+                                    amount={result.saldoEnpap.totale}
+                                    colorTheme="green"
+                                    details={[
+                                        { label: "Totale 2%", value: result.saldoEnpap.contributo2percent },
+                                        { label: "Totale 10%", value: result.saldoEnpap.contributo10percent },
+                                        { label: "Acconto già versato", value: result.saldoEnpap.accontoVersato, isNegative: true }
+                                    ]}
+                                />
+                                <ResultsCard 
+                                    title="II Acconto Imposte"
+                                    subtitle={`30 Novembre ${taxYear}`}
+                                    amount={result.impostaSostitutivaNovembre}
+                                    colorTheme="orange"
+                                    details={[
+                                        { label: "Acconto (60%)", value: result.impostaSostitutivaNovembre }
+                                    ]}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap justify-center gap-4 mt-8">
+                            <button onClick={() => setView('form')} className="px-6 py-3 bg-slate-800 border border-slate-700 text-slate-200 font-semibold rounded-xl hover:bg-slate-700 transition-all shadow-lg hover:shadow-xl">
+                                ← Torna ai dati
+                            </button>
+                            <button onClick={saveImage} className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg hover:shadow-indigo-500/25">
+                                Esporta come Immagine
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Renderizzazione del Form di inserimento
+            const pastYear1 = taxYear - 1;
+            const pastYear2 = taxYear - 2;
+
+            return (
+                <div className="min-h-screen p-4 md:p-8 flex flex-col items-center justify-center font-sans">
+                    <div className="w-full max-w-2xl bg-slate-900 border border-slate-800 p-6 md:p-10 rounded-3xl shadow-2xl relative overflow-hidden">
+                        
+                        {/* Decorazione di sfondo */}
+                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
+
+                        <header className="mb-10 text-center">
+                            <h1 className="text-3xl font-black text-white tracking-tight mb-2">Tasse Psicologi</h1>
+                            <p className="text-slate-400 text-sm">Calcolatore previdenziale e fiscale per Forfettari (Ateco 86.90.30)</p>
+                        </header>
+
+                        <div className="space-y-8">
+                            
+                            {/* Impostazioni Generali */}
+                            <div className="bg-slate-800/30 p-5 rounded-2xl border border-slate-700/50 grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="text-sm font-medium text-slate-300 block mb-2">Anno di calcolo scadenze</label>
+                                    <div className="relative flex items-center">
+                                        <input 
+                                            type="number" 
+                                            value={taxYear} 
+                                            onChange={e => setTaxYear(parseInt(e.target.value) || new Date().getFullYear())} 
+                                            className="w-full bg-slate-800 border border-slate-600 rounded-lg pl-4 pr-10 py-2 text-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none" 
+                                        />
+                                        <div className="absolute right-2 flex flex-col">
+                                            <button onClick={() => setTaxYear(taxYear + 1)} className="text-slate-400 hover:text-white p-0.5 transition-colors" title="Aumenta anno">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 15l7-7 7 7" /></svg>
+                                            </button>
+                                            <button onClick={() => setTaxYear(taxYear - 1)} className="text-slate-400 hover:text-white p-0.5 transition-colors" title="Diminuisci anno">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-slate-300 block mb-2">Aliquota Imposta Sostitutiva</label>
+                                    <div className="flex bg-slate-800 p-1.5 rounded-xl border border-slate-600">
+                                        <button onClick={() => setRegime(5)} className={`flex-1 py-1.5 rounded-lg text-sm font-bold transition-all ${regime === 5 ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Start-up 5%</button>
+                                        <button onClick={() => setRegime(15)} className={`flex-1 py-1.5 rounded-lg text-sm font-bold transition-all ${regime === 15 ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>Ordinario 15%</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Dati Anno Precedente */}
+                            <div className="bg-slate-800/30 p-5 md:p-6 rounded-2xl border border-slate-700/50">
+                                <h2 className="text-lg font-bold text-indigo-400 mb-5 flex items-center gap-2">
+                                    Dati Fiscali Anno {pastYear1}
+                                </h2>
+                                <div className="space-y-5">
+                                    <CurrencyInput 
+                                        label={`Fatturato lordo incassato nel ${pastYear1}`} 
+                                        tooltip="La somma di tutte le fatture effettivamente incassate (principio di cassa) dal 1 Gennaio al 31 Dicembre."
+                                        value={lordoY1} 
+                                        onChange={setLordoY1} 
+                                    />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <CurrencyInput 
+                                            label={`Imposte pagate nel ${pastYear1}`} 
+                                            tooltip="La somma dei bollettini F24 (Saldi e Acconti) pagati l'anno scorso."
+                                            value={tasseY1} 
+                                            onChange={setTasseY1} 
+                                        />
+                                        <CurrencyInput 
+                                            label={`ENPAP pagato nel ${pastYear1}`} 
+                                            tooltip="La somma dei Mav ENPAP (Acconto di Marzo + Saldo di Ottobre) versati l'anno scorso. Serve per abbattere l'imponibile fiscale."
+                                            value={enpapY1} 
+                                            onChange={setEnpapY1} 
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Dati Due Anni Prima (Per acconto ENPAP) */}
+                            <div className="bg-slate-800/30 p-5 md:p-6 rounded-2xl border border-slate-700/50">
+                                <h2 className="text-lg font-bold text-emerald-400 mb-5 flex items-center gap-2">
+                                    Dati Fiscali Anno {pastYear2}
+                                </h2>
+                                <p className="text-xs text-slate-400 mb-4 bg-slate-800/50 p-3 rounded-lg border border-slate-700/50">
+                                    💡 <strong>Perché servono?</strong> L'acconto ENPAP da pagare a Marzo si basa sempre sul reddito di 2 anni fa.
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <CurrencyInput 
+                                        label={`Fatturato lordo ${pastYear2}`} 
+                                        value={lordoY2} 
+                                        onChange={setLordoY2} 
+                                    />
+                                    <CurrencyInput 
+                                        label={`ENPAP pagato nel ${pastYear2}`} 
+                                        value={enpapY2} 
+                                        onChange={setEnpapY2} 
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <button 
+                                    onClick={clearData}
+                                    className="px-4 py-4 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700 rounded-xl font-medium transition-colors"
+                                    title="Svuota tutti i campi"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                </button>
+                                <button 
+                                    onClick={handleCalculate}
+                                    disabled={!isFormValid}
+                                    className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 text-white font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-indigo-500/25 flex items-center justify-center gap-2 text-lg"
+                                >
+                                    Elabora Scadenze {taxYear}
+                                </button>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
