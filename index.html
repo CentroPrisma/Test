@@ -5,18 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accesso Riservato - Prisma</title>
     <style>
-        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        body { font-family: -apple-system, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .login-box { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; border-top: 6px solid #2c3e50; }
         input { width: 100%; padding: 12px; margin: 20px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 1rem; text-align: center; }
-        button { background: #2c3e50; color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; }
-        #mainContent { display: none; flex-direction: column; align-items: center; width: 100%; padding: 20px; }
-        .header { background: white; width: 100%; max-width: 600px; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 6px solid #2c3e50; margin-bottom: 30px; }
-        .test-card { background: white; padding: 25px; border-radius: 12px; text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; width: 100%; max-width: 600px; margin-bottom: 15px;}
+        button { background: #2c3e50; color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; transition: background 0.2s;}
+        button:hover { background: #1a252f; }
+        
+        /* Contenitore principale dopo il login */
+        #authContent { display: none; flex-direction: column; align-items: center; width: 100%; padding: 20px; box-sizing: border-box; }
+        
+        .header { background: white; width: 100%; max-width: 600px; padding: 30px; border-radius: 15px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 6px solid #2c3e50; margin-bottom: 30px; box-sizing: border-box;}
+        
+        /* Stile per le sezioni interne (Dashboard e Lista Test) */
+        .view-section { display: none; width: 100%; max-width: 600px; flex-direction: column; align-items: center; }
+        .view-section.active { display: flex; }
+
+        /* Griglia del Menu Principale */
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        @media (max-width: 500px) { .dashboard-grid { grid-template-columns: 1fr; } } /* Su cellulare una colonna sola */
+
+        .menu-card { background: white; padding: 25px; border-radius: 12px; text-align: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; transition: transform 0.2s, box-shadow 0.2s; }
+        .menu-card:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); border-color: #3498db; }
+        .menu-card h3 { margin: 0 0 10px 0; color: #2c3e50; }
+        .menu-card p { margin: 0; color: #64748b; font-size: 0.9rem; }
+
+        /* Stile per i link dei test */
+        .test-card { background: white; padding: 25px; border-radius: 12px; text-decoration: none; color: inherit; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; width: 100%; margin-bottom: 15px; box-sizing: border-box; transition: transform 0.2s;}
+        .test-card:hover { transform: translateY(-2px); border-color: #3498db; }
         .test-info h3 { margin: 0; color: #3498db; }
+        
+        .back-btn { background: transparent; color: #64748b; border: 1px solid #cbd5e1; margin-bottom: 20px; width: auto; align-self: flex-start; }
+        .back-btn:hover { background: #f8fafc; color: #2c3e50; }
+
+        /* Stile Modale Messaggi */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 300px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal-content h3 { color: #2c3e50; margin-top: 0; }
+        .modal-content p { color: #64748b; margin-bottom: 20px; }
+        .modal-btn { background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
+        .modal-btn:hover { background: #2980b9; }
+
     </style>
 </head>
 <body>
 
+    <!-- Area Login -->
     <div id="loginArea" class="login-box">
         <h2 style="color:#2c3e50; margin:0;">Centro Prisma</h2>
         <p style="color:#64748b; font-size:0.9rem;">Inserire la chiave di accesso allo studio</p>
@@ -24,49 +57,118 @@
         <button onclick="checkPass()">Accedi</button>
     </div>
 
-    <div id="mainContent">
+    <!-- Area Riservata (visibile dopo il login) -->
+    <div id="authContent">
         <div class="header">
             <div style="font-weight:800; font-size:1.5rem; color:#2c3e50;">Centro di psicoterapia - Prisma</div>
             <div style="color:#7f8c8d; text-transform:uppercase; letter-spacing:2px; font-size:0.9rem;">Lecce</div>
         </div>
 
-        <a href="SCL90.html" class="test-card">
-            <div class="test-info">
-                <h3>SCL90</h3>
-                <p style="margin:5px 0 0 0; color:#64748b;">Symptom Check List 90 - Valutazione della sintomatologia</p>
+        <!-- VISTA 1: Menu Principale (Dashboard) -->
+        <div id="view-dashboard" class="view-section active">
+            <div class="dashboard-grid">
+                <!-- Bottone Area Test -->
+                <div class="menu-card" onclick="switchView('view-tests')">
+                    <h3>📋 Area Test</h3>
+                    <p>SCL90, PID-5, YSQ</p>
+                </div>
+                <!-- Bottone Area Fiscale (Esempio) -->
+                <div class="menu-card" onclick="showModal('Sezione in costruzione!', 'Lo strumento per il calcolo delle tasse sarà disponibile a breve.')">
+                    <h3>💶 Calcolo Tasse</h3>
+                    <p>Fatturazione e compensi</p>
+                </div>
+                <!-- Bottone Mappe Concettuali (Esempio) -->
+                <div class="menu-card" onclick="showModal('Sezione in costruzione!', 'L\'area per le mappe cliniche e i materiali è in fase di sviluppo.')">
+                    <h3>🧠 Mappe Cliniche</h3>
+                    <p>Risorse e concetti</p>
+                </div>
+                <!-- Bottone Utilità (Esempio) -->
+                <div class="menu-card" onclick="showModal('Sezione in costruzione!', 'Presto troverai qui link e strumenti utili per la pratica.')">
+                    <h3>⚙️ Utilità</h3>
+                    <p>Link utili e contatti</p>
+                </div>
             </div>
-            <div style="font-size:1.5rem; color:#cbd5e1;">➔</div>
-        </a>
-        <a href="pid5.html" class="test-card">
-            <div class="test-info">
-                <h3>PID-5</h3>
-                <p style="margin:5px 0 0 0; color:#64748b;">Versione Clinica 220 Item</p>
-            </div>
-            <div style="font-size:1.5rem; color:#cbd5e1;">➔</div>
-        </a>
-        <a href="YSQ.html" class="test-card">
-            <div class="test-info">
-                <h3>YSQ-S3</h3>
-                <p style="margin:5px 0 0 0; color:#64748b;">Young Schema Questionnaire 90 item</p>
-            </div>
-            <div style="font-size:1.5rem; color:#cbd5e1;">➔</div>
-        </a>
+        </div>
+
+        <!-- VISTA 2: Lista dei Test -->
+        <div id="view-tests" class="view-section">
+            <button class="back-btn" onclick="switchView('view-dashboard')">⬅ Torna al Menu</button>
+            
+            <a href="SCL90.html" class="test-card">
+                <div class="test-info">
+                    <h3>SCL90</h3>
+                    <p style="margin:5px 0 0 0; color:#64748b;">Symptom Check List 90 - Valutazione sintomatologia</p>
+                </div>
+                <div style="font-size:1.5rem; color:#cbd5e1;">➔</div>
+            </a>
+            <a href="pid5.html" class="test-card">
+                <div class="test-info">
+                    <h3>PID-5</h3>
+                    <p style="margin:5px 0 0 0; color:#64748b;">Versione Clinica 220 Item</p>
+                </div>
+                <div style="font-size:1.5rem; color:#cbd5e1;">➔</div>
+            </a>
+            <a href="YSQ.html" class="test-card">
+                <div class="test-info">
+                    <h3>YSQ-S3</h3>
+                    <p style="margin:5px 0 0 0; color:#64748b;">Young Schema Questionnaire 90 item</p>
+                </div>
+                <div style="font-size:1.5rem; color:#cbd5e1;">➔</div>
+            </a>
+        </div>
+
+    </div>
+
+    <!-- Modale per messaggi -->
+    <div id="messageModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modalTitle">Titolo</h3>
+            <p id="modalText">Testo del messaggio.</p>
+            <button class="modal-btn" onclick="closeModal()">Chiudi</button>
+        </div>
     </div>
 
     <script>
+        // Funzione di Login
         function checkPass() {
             const p = document.getElementById('passInput').value;
             if (p === 'prisma2026') {
-                document.getElementById('loginArea').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'flex';
-                sessionStorage.setItem('auth', 'ok');
+                loginSuccess();
             } else {
-                alert('Password errata');
+                showModal('Errore di Accesso', 'La password inserita non è corretta.');
             }
         }
+
+        // Se l'accesso è già stato effettuato nella sessione
         if(sessionStorage.getItem('auth') === 'ok') {
+            loginSuccess();
+        }
+
+        function loginSuccess() {
             document.getElementById('loginArea').style.display = 'none';
-            document.getElementById('mainContent').style.display = 'flex';
+            document.getElementById('authContent').style.display = 'flex';
+            sessionStorage.setItem('auth', 'ok');
+        }
+
+        // Funzione per navigare tra le "Viste" interne
+        function switchView(viewId) {
+            // Nasconde tutte le sezioni
+            const views = document.querySelectorAll('.view-section');
+            views.forEach(view => view.classList.remove('active'));
+            
+            // Mostra solo la sezione richiesta
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        // Gestione Finestra Modale (sostituisce i vecchi "alert" del browser)
+        function showModal(title, text) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalText').innerText = text;
+            document.getElementById('messageModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('messageModal').style.display = 'none';
         }
     </script>
 </body>
