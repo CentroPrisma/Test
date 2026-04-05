@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mappa CBT - Costruttore a Nodi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- LIBRERIE PROFESSIONALI PER GENERARE PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        /* Stili per la Stampa Nativa */
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: white !important; overflow: visible !important; height: auto !important; }
+            .print-border-gray { border-color: #e5e7eb !important; }
+            #scroll-wrapper { overflow: visible !important; position: static !important; height: auto !important; }
+            #arrows-svg { display: block !important; }
+            path { stroke: #94a3b8 !important; }
+        }
+        
+        /* Animazioni e UI */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        textarea {
+            min-height: 44px;
+            overflow: hidden;
+            resize: none;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        
+        ::-webkit-scrollbar { height: 10px; width: 10px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; border: 2px solid #f8fafc; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* CSS Albero (Logica dei rami e connettori) */
+        .tree-child {
+            position: relative;
+            padding-top: 2.5rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .tree-child::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 3px;
+            height: 2.5rem;
+            background-color: #cbd5e1;
+            transform: translateX(-50%);
+        }
+        .tree-child::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #cbd5e1;
+        }
+        .tree-child:first-child::after { left: 50%; width: 50%; }
+        .tree-child:last-child::after { left: 0; width: 50%; }
+        .tree-child:first-child:last-child::after { display: none; }
+
+        /* Navigazione */
+        #scroll-wrapper { cursor: grab; }
+        #scroll-wrapper.is-dragging { cursor: grabbing !important; }
+        .card-box { cursor: auto; }
+
+        /* Modalità Loop */
+        body.loop-mode-active .card-box {
+            cursor: crosshair !important;
+            transition: all 0.2s;
+        }
+        body.loop-mode-active .card-box:hover {
+            box-shadow: 0 0 0 4px #ef4444;
+            transform: scale(1.02);
+            z-index: 50;
+        }
+        body.loop-mode-active .no-loop-click {
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 h-screen font-sans text-slate-800 flex flex-col relative overflow-hidden">
+
+    <div id="loop-banner" class="fixed top-0 left-0 w-full bg-red-500 text-white p-2 text-center font-bold text-base hidden z-50 shadow-md">
+        Modalità Circolo Vizioso: Clicca sul blocco bersaglio per chiudere il ciclo (oppure <button onclick="cancelLoop()" class="underline px-2 hover:text-red-200">annulla</button>)
+    </div>
+
+    <!-- HEADER MINIMALISTA -->
+    <header class="bg-white shadow-sm border-b border-slate-200 shrink-0 z-20 relative no-print h-14 flex items-center px-4 md:px-6 justify-between w-full">
+        <!-- Sinistra: Titolo e Paziente -->
+        <div class="flex items-center gap-4">
+            <h1 class="text-lg font-bold text-slate-800 hidden md:block">Mappa CBT</h1>
+            <div class="hidden md:block w-px h-6 bg-slate-200"></div>
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold text-slate-400 tracking-wider">PAZIENTE:</span>
+                <input id="patient-name" type="text" placeholder="Nome / Iniziali" class="bg-slate-50 border border-slate-200 rounded px-2 py-1 outline-none text-sm w-32 md:w-56 font-medium text-slate-700 focus:ring-1 focus:ring-blue-400 transition-shadow">
+            </div>
+        </div>
+
+        <!-- Destra: Bottoni -->
+        <div class="flex items-center gap-2">
+            <button onclick="openModal('root')" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5 font-medium text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                <span class="hidden md:inline">Nuovo Nodo</span>
+            </button>
+            <button id="print-btn" onclick="handlePrint()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg shadow-sm transition flex items-center gap-1.5 font-medium text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v3a2 2 0 002 2h1v2a2 2 0 002 2h6a2 2 0 002-2v-2h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm8 0H7v3h6V4zm0 8H7v4h6v-4z" clip-rule="evenodd" /></svg>
+                <span class="hidden md:inline">Stampa PDF</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Scroll Wrapper -->
+    <div id="scroll-wrapper" class="w-full flex-1 overflow-auto relative z-0">
+        <div id="export-container" class="min-w-max min-h-max p-8 md:p-16 flex flex-col items-center origin-top transition-transform duration-200 ease-out bg-slate-50">
+            
+            <!-- Intestazione visibile SOLO nel PDF -->
+            <div id="print-header" class="hidden w-full text-left border-b-2 border-slate-200 pb-4 mb-16">
+                <h1 class="text-3xl font-bold text-slate-800">Concettualizzazione del Caso (Mappa CBT)</h1>
+                <h2 class="text-xl text-slate-600 mt-2">Paziente: <span id="print-patient-name" class="font-bold text-slate-800"></span></h2>
+            </div>
+
+            <!-- Canvas dei Nodi -->
+            <div id="main-canvas" class="flex flex-col items-center w-max min-w-[800px] gap-16 relative">
+                <!-- Overlay Circoli Viziosi -->
+                <svg id="arrows-svg" class="absolute top-0 left-0 w-full h-full pointer-events-none" style="z-index: 5; overflow: visible;"></svg>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Controlli ZOOM -->
+    <div class="fixed bottom-6 right-6 no-print bg-white rounded-2xl shadow-lg border border-slate-200 flex items-center p-1.5 z-40 gap-1">
+        <button onclick="zoomOut()" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-600 font-bold transition" title="Riduci Zoom">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" /></svg>
+        </button>
+        <div id="zoom-display" class="w-14 text-center font-bold text-sm text-slate-700 select-none cursor-pointer hover:bg-slate-50 py-2 rounded-lg" onclick="resetZoom()" title="Reset Zoom">100%</div>
+        <button onclick="zoomIn()" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 text-slate-600 font-bold transition" title="Aumenta Zoom">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
+        </button>
+    </div>
+
+    <!-- MODAL INSERIMENTO -->
+    <div id="node-modal" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity p-4">
+        <div class="bg-white rounded-3xl p-6 md:p-8 max-w-2xl w-full shadow-2xl animate-fade-in relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal()" class="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-full transition"><svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2" id="modal-title">Aggiungi Elemento</h3>
+            <p class="text-slate-500 mb-6" id="modal-subtitle">Seleziona il tipo di blocco da inserire.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button id="btn-add-sm" onclick="confirmAdd('sm')" class="flex flex-col text-left p-4 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-xl transition group">
+                    <span class="bg-teal-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase w-max mb-2 shadow-sm">SM</span>
+                    <span class="text-teal-900 font-bold text-lg">Stato Mentale / Schema</span>
+                    <span class="text-teal-700 text-sm mt-1">Convinzione di base</span>
+                </button>
+                <button id="btn-add-a" onclick="confirmAdd('a')" class="flex flex-col text-left p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition group">
+                    <span class="bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase w-max mb-2 shadow-sm">A</span>
+                    <span class="text-blue-900 font-bold text-lg">Situazione (Trigger)</span>
+                    <span class="text-blue-700 text-sm mt-1">L'evento attivante</span>
+                </button>
+                <button id="btn-add-b" onclick="confirmAdd('b')" class="flex flex-col text-left p-4 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition group">
+                    <span class="bg-purple-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase w-max mb-2 shadow-sm">B</span>
+                    <span class="text-purple-900 font-bold text-lg">Pensiero Singolo</span>
+                    <span class="text-purple-700 text-sm mt-1">Valutazione cognitiva autonoma</span>
+                </button>
+                <button id="btn-add-c" onclick="confirmAdd('c')" class="flex flex-col text-left p-4 bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-xl transition group">
+                    <span class="bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase w-max mb-2 shadow-sm">C</span>
+                    <span class="text-orange-900 font-bold text-lg">Emozione Singola</span>
+                    <span class="text-orange-700 text-sm mt-1">Stato affettivo</span>
+                </button>
+                <button id="btn-add-d" onclick="confirmAdd('d')" class="flex flex-col text-left p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-xl transition group md:col-span-2">
+                    <span class="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase w-max mb-2 shadow-sm">D</span>
+                    <span class="text-green-900 font-bold text-lg">Comportamento</span>
+                    <span class="text-green-700 text-sm mt-1">Azione intrapresa (es. Evitamento)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ELIMINAZIONE -->
+    <div id="delete-modal" class="fixed inset-0 bg-slate-900/60 hidden flex items-center justify-center z-50 backdrop-blur-sm transition-opacity p-4">
+        <div class="bg-white rounded-2xl p-6 md:p-8 max-w-sm w-full shadow-2xl animate-fade-in relative max-h-[90vh] overflow-y-auto">
+            <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center mb-4"><svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">Elimina Ramo?</h3>
+            <p class="text-slate-600 text-sm mb-6">Se elimini questo elemento, verrà rimosso <b class="text-red-500">l'intero ramo sottostante</b>. L'azione non è annullabile.</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-xl font-bold transition">Annulla</button>
+                <button onclick="executeDelete()" class="px-5 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold transition shadow-md">Sì, Elimina</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- MOTORE PAN & DRAG (Trascinamento) ---
+        const scrollWrapper = document.getElementById('scroll-wrapper');
+        let isDragging = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        scrollWrapper.addEventListener('mousedown', (e) => {
+            if (isCreatingLoop) return;
+            if (e.target.closest('button, textarea, input, .card-box')) return;
+            
+            isDragging = true;
+            scrollWrapper.classList.add('is-dragging');
+            startX = e.pageX - scrollWrapper.offsetLeft;
+            startY = e.pageY - scrollWrapper.offsetTop;
+            scrollLeft = scrollWrapper.scrollLeft;
+            scrollTop = scrollWrapper.scrollTop;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            scrollWrapper.classList.remove('is-dragging');
+        });
+
+        scrollWrapper.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.pageX - scrollWrapper.offsetLeft;
+            const y = e.pageY - scrollWrapper.offsetTop;
+            const walkX = (x - startX) * 1.5; 
+            const walkY = (y - startY) * 1.5;
+            scrollWrapper.scrollLeft = scrollLeft - walkX;
+            scrollWrapper.scrollTop = scrollTop - walkY;
+        });
+
+        // --- SISTEMA DI ZOOM ---
+        let zoomLevel = 1;
+        const exportContainer = document.getElementById('export-container');
+        const zoomDisplay = document.getElementById('zoom-display');
+
+        function setZoom(level) {
+            zoomLevel = Math.max(0.4, Math.min(level, 1.5));
+            exportContainer.style.transform = `scale(${zoomLevel})`;
+            zoomDisplay.innerText = Math.round(zoomLevel * 100) + '%';
+            drawArrows(); 
+        }
+        function zoomIn() { setZoom(zoomLevel + 0.1); }
+        function zoomOut() { setZoom(zoomLevel - 0.1); }
+        function resetZoom() { setZoom(1); }
+
+        // --- MOTORE DI GENERAZIONE PDF (FIXATO CONTRO I TAGLI) ---
+        async function handlePrint() {
+            const printBtn = document.getElementById('print-btn');
+            const originalContent = printBtn.innerHTML;
+            
+            printBtn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generazione...`;
+            printBtn.disabled = true;
+
+            resetZoom();
+
+            const body = document.body;
+            const html = document.documentElement;
+            const printHeader = document.getElementById('print-header');
+            const noPrintElements = document.querySelectorAll('.no-print');
+            
+            // Popola intestazione e nascondi bottoni
+            const patientName = document.getElementById('patient-name').value || 'Anonimo';
+            document.getElementById('print-patient-name').innerText = patientName;
+            printHeader.classList.remove('hidden');
+            printHeader.classList.add('block');
+            noPrintElements.forEach(el => el.style.display = 'none');
+
+            // ---------------------------------------------------------
+            // FIX CRITICO PER NON TAGLIARE LA FINE DELLA MAPPA:
+            // Rimuoviamo TUTTI i limiti di altezza e scroll che bloccano
+            // il "campo visivo" del motore PDF alla dimensione dello schermo.
+            // ---------------------------------------------------------
+            const origBodyClasses = body.className;
+            body.classList.remove('h-screen', 'overflow-hidden');
+            body.style.height = 'auto';
+            html.style.height = 'auto';
+            
+            const origOverflow = scrollWrapper.style.overflow;
+            const origPosition = scrollWrapper.style.position;
+            const origHeight = scrollWrapper.style.height;
+            
+            scrollWrapper.style.overflow = 'visible';
+            scrollWrapper.style.position = 'static';
+            scrollWrapper.style.height = 'auto';
+
+            // Ferma le animazioni per non sfasare il PDF
+            exportContainer.style.transition = 'none';
+            window.scrollTo(0, 0);
+
+            // FIX TESTI LUNGHI: Sostituisce textarea con div temporanei
+            const textareas = document.querySelectorAll('textarea');
+            const replacements = [];
+            textareas.forEach(ta => {
+                const div = document.createElement('div');
+                div.className = ta.className; 
+                div.style.minHeight = ta.style.height || ta.offsetHeight + 'px';
+                div.style.height = 'auto'; // Forza espansione
+                div.style.wordBreak = 'break-word';
+                div.style.whiteSpace = 'pre-wrap';
+                div.style.overflowWrap = 'anywhere';
+                div.innerText = ta.value || ta.placeholder; 
+
+                ta.parentNode.insertBefore(div, ta);
+                const originalDisplay = ta.style.display;
+                ta.style.display = 'none';
+
+                replacements.push({ textarea: ta, div: div, originalDisplay: originalDisplay });
+            });
+
+            // Attendiamo mezzo secondo per far espandere fisicamente il browser
+            await new Promise(r => setTimeout(r, 500));
+
+            try {
+                // Calcoliamo la dimensione REALE di tutta la struttura srotolata
+                const fullWidth = exportContainer.scrollWidth;
+                const fullHeight = exportContainer.scrollHeight;
+
+                const canvas = await html2canvas(exportContainer, {
+                    scale: 2, 
+                    useCORS: true,
+                    backgroundColor: '#f8fafc', 
+                    width: fullWidth,
+                    height: fullHeight,
+                    windowWidth: fullWidth,
+                    windowHeight: fullHeight
+                });
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.95);
+                const imgWidth = canvas.width / 2; 
+                const imgHeight = canvas.height / 2;
+
+                const { jsPDF } = window.jspdf;
+                
+                const pdf = new jsPDF({
+                    orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
+                    unit: 'px',
+                    format: [imgWidth, imgHeight]
+                });
+
+                pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+                const safeName = patientName.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+                pdf.save(`mappa_cbt_${safeName}.pdf`);
+
+            } catch (error) {
+                console.error("Errore durante la creazione del PDF:", error);
+                alert("C'è stato un errore. Riprova.");
+            } finally {
+                // RIPRISTINA L'INTERFACCIA NORMALE
+                replacements.forEach(rep => {
+                    rep.div.remove();
+                    rep.textarea.style.display = rep.originalDisplay;
+                });
+
+                body.className = origBodyClasses;
+                body.style.height = '';
+                html.style.height = '';
+                
+                scrollWrapper.style.overflow = origOverflow;
+                scrollWrapper.style.position = origPosition;
+                scrollWrapper.style.height = origHeight;
+                
+                exportContainer.style.transition = 'transform 200ms ease-out';
+
+                printHeader.classList.remove('block');
+                printHeader.classList.add('hidden');
+                noPrintElements.forEach(el => el.style.display = '');
+                
+                printBtn.innerHTML = originalContent;
+                printBtn.disabled = false;
+                drawArrows();
+            }
+        }
+
+        // --- MOTORE CIRCOLI VIZIOSI ---
+        let loops = [];
+        let isCreatingLoop = false;
+        let loopStartId = null;
+
+        function startLoop(id) {
+            isCreatingLoop = true;
+            loopStartId = id;
+            document.body.classList.add('loop-mode-active');
+            document.getElementById('loop-banner').classList.remove('hidden');
+        }
+
+        function cancelLoop() {
+            isCreatingLoop = false;
+            loopStartId = null;
+            document.body.classList.remove('loop-mode-active');
+            document.getElementById('loop-banner').classList.add('hidden');
+        }
+
+        function handleCardClick(id) {
+            if (!isCreatingLoop || id === loopStartId) return;
+            loops.push({ from: loopStartId, to: id });
+            cancelLoop();
+            drawArrows();
+        }
+
+        function drawArrows() {
+            if (window.canvasObserver) window.canvasObserver.disconnect();
+
+            const svg = document.getElementById('arrows-svg');
+            svg.innerHTML = `
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                    </marker>
+                </defs>
+            `;
+            
+            const canvasRect = document.getElementById('main-canvas').getBoundingClientRect();
+            
+            loops.forEach((loop, index) => {
+                const fromEl = document.getElementById('card-' + loop.from);
+                const toEl = document.getElementById('card-' + loop.to);
+                
+                if(!fromEl || !toEl) return;
+                
+                const fromRect = fromEl.getBoundingClientRect();
+                const toRect = toEl.getBoundingClientRect();
+                
+                const sX = (fromRect.left - canvasRect.left) / zoomLevel;
+                const sY = (fromRect.top - canvasRect.top) / zoomLevel + (fromRect.height / 2);
+                
+                const eX = (toRect.left - canvasRect.left) / zoomLevel;
+                const eY = (toRect.top - canvasRect.top) / zoomLevel + (toRect.height / 2);
+                
+                const controlX = Math.min(sX, eX) - 250 - (index * 30);
+                
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', `M ${sX} ${sY} C ${controlX} ${sY}, ${controlX} ${eY}, ${eX} ${eY}`);
+                path.setAttribute('fill', 'none');
+                path.setAttribute('stroke', '#94a3b8');
+                path.setAttribute('stroke-width', '4');
+                path.setAttribute('stroke-dasharray', '8,8');
+                path.setAttribute('marker-end', 'url(#arrowhead)');
+                path.setAttribute('class', 'pointer-events-auto cursor-pointer hover:stroke-slate-500 transition-colors');
+                
+                path.onclick = () => {
+                    loops = loops.filter(l => l !== loop);
+                    drawArrows();
+                };
+                
+                const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                title.textContent = "Clicca per rimuovere il circolo vizioso";
+                path.appendChild(title);
+                
+                svg.appendChild(path);
+            });
+
+            if (window.canvasObserver) {
+                window.canvasObserver.observe(document.getElementById('main-canvas'), { childList: true, subtree: true, attributes: true, characterData: true });
+            }
+        }
+
+        window.addEventListener('resize', drawArrows);
+        window.canvasObserver = new MutationObserver(drawArrows);
+        window.canvasObserver.observe(document.getElementById('main-canvas'), { childList: true, subtree: true, attributes: true, characterData: true });
+
+        // --- GESTIONE LOGICA E MODALI ---
+        let currentAction = null, currentTargetId = null, nodeToDelete = null;
+
+        function autoResize(el) {
+            el.style.height = 'auto';
+            el.style.height = el.scrollHeight + 'px';
+            drawArrows();
+        }
+
+        function openModal(action, targetId = null, targetType = null) {
+            if(isCreatingLoop) return; 
+            currentAction = action;
+            currentTargetId = targetId;
+            const modal = document.getElementById('node-modal');
+            const title = document.getElementById('modal-title');
+            const sub = document.getElementById('modal-subtitle');
+            
+            const buttons = ['sm', 'a', 'b', 'c', 'd'].map(id => document.getElementById('btn-add-' + id));
+            buttons.forEach(btn => { if(btn) btn.style.display = 'flex'; });
+            
+            if (action === 'root') {
+                title.innerText = 'Crea Punto di Partenza';
+                sub.innerText = 'Da quale elemento inizia questo nuovo ramo di analisi?';
+            } else if (action === 'parent') {
+                title.innerText = 'Aggiungi Origine / Causa';
+                sub.innerText = 'Quale evento o stato ha generato l\'elemento sottostante?';
+                if (targetType === 'c') {
+                    buttons.forEach((b, i) => { if(i !== 2) b.style.display = 'none'; }); 
+                } else if (targetType === 'b') {
+                    buttons.forEach((b, i) => { if(i === 2 || i === 3) b.style.display = 'none'; }); 
+                }
+            } else if (action === 'child') {
+                title.innerText = 'Aggiungi Conseguenza / Diramazione';
+                sub.innerText = 'Quale reazione scaturisce da questo blocco?';
+                if (targetType === 'a') {
+                    buttons.forEach((b, i) => { if(i !== 2) b.style.display = 'none'; }); 
+                } else if (targetType === 'b') {
+                    const childContainer = document.getElementById('children-' + targetId);
+                    if(childContainer && childContainer.children.length > 0){
+                        alert("Regola CBT: Ogni pensiero può generare una sola Emozione specifica.");
+                        return;
+                    }
+                    buttons.forEach((b, i) => { if(i !== 3) b.style.display = 'none'; }); 
+                }
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('node-modal').classList.add('hidden'); }
+
+        function requestDelete(id) {
+            nodeToDelete = id;
+            document.getElementById('delete-modal').classList.remove('hidden');
+        }
+        function closeDeleteModal() { nodeToDelete = null; document.getElementById('delete-modal').classList.add('hidden'); }
+        
+        function executeDelete() {
+            if (nodeToDelete) {
+                const wrapper = document.getElementById('wrapper-' + nodeToDelete);
+                if(wrapper) {
+                    const parentContainer = wrapper.parentElement;
+                    wrapper.remove();
+                    loops = loops.filter(l => document.getElementById('card-'+l.from) && document.getElementById('card-'+l.to));
+                    
+                    if (parentContainer && parentContainer.classList.contains('node-children') && parentContainer.children.length === 0) {
+                        parentContainer.parentElement.classList.add('hidden');
+                        parentContainer.parentElement.classList.remove('flex');
+                    }
+                    drawArrows();
+                }
+                closeDeleteModal();
+            }
+        }
+
+        function getCardHTML(id, type) {
+            const btnUp = `<button onclick="openModal('parent', '${id}', '${type}')" class="no-print no-loop-click text-xs font-bold bg-white text-slate-500 hover:text-slate-800 px-2 py-1.5 rounded-lg shadow-sm border border-slate-200 transition-all flex-1">CAUSA &uarr;</button>`;
+            const btnDown = `<button onclick="openModal('child', '${id}', '${type}')" class="no-print no-loop-click text-xs font-bold bg-white text-slate-500 hover:text-slate-800 px-2 py-1.5 rounded-lg shadow-sm border border-slate-200 transition-all flex-1">SOTTO &darr;</button>`;
+            const btnLoop = `<button onclick="startLoop('${id}')" title="Crea un circolo vizioso collegandolo a un altro blocco" class="no-print no-loop-click text-xs font-bold bg-slate-50 text-slate-600 hover:bg-slate-100 px-2 py-1.5 rounded-lg shadow-sm border border-slate-200 transition-all flex-none flex items-center gap-1"><svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg> Ciclo</button>`;
+            const btnDel = `<button onclick="requestDelete('${id}')" class="no-loop-click absolute top-2 right-2 p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100 no-print">&times;</button>`;
+
+            const baseCardCls = "card-box relative p-4 rounded-2xl shadow-sm border-2 group transition-all duration-300 print:shadow-none print-border-gray w-72 md:w-[340px] bg-white/95 backdrop-blur-sm z-10";
+            
+            const textareaCls = "no-loop-click w-full bg-white/60 border border-transparent rounded-xl p-3 mt-1 text-slate-800 text-base focus:outline-none focus:ring-2 focus:bg-white shadow-inner transition font-medium placeholder:text-slate-400 break-words whitespace-pre-wrap";
+            
+            let color, label, abbr, ph;
+            if(type === 'sm'){ color='teal'; label='Stato Mentale'; abbr='SM'; ph='Es. Inadeguatezza...'; }
+            if(type === 'a'){ color='blue'; label='Situazione'; abbr='A'; ph='Dove? Con chi?...'; }
+            if(type === 'b'){ color='purple'; label='Pensiero'; abbr='B'; ph='Cosa penso?...'; }
+            if(type === 'c'){ color='orange'; label='Emozione'; abbr='C'; ph='Cosa provo?...'; }
+            if(type === 'd'){ color='green'; label='Comportamento'; abbr='D'; ph='Come agisco?...'; }
+
+            return `
+                <div id="card-${id}" onclick="handleCardClick('${id}')" class="${baseCardCls} bg-${color}-50 border-${color}-200">
+                    ${btnDel}
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="bg-${color}-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">${abbr}</span>
+                        <span class="text-xs font-bold text-${color}-800 uppercase tracking-wide">${label}</span>
+                    </div>
+                    <textarea rows="1" oninput="autoResize(this)" placeholder="${ph}" class="${textareaCls} focus:border-${color}-300 focus:ring-${color}-100"></textarea>
+                    <div class="flex justify-between gap-1.5 mt-4 no-print w-full">${btnUp}${btnLoop}${btnDown}</div>
+                </div>
+            `;
+        }
+
+        function confirmAdd(type) {
+            closeModal();
+            const id = 'node-' + Date.now() + Math.floor(Math.random() * 1000);
+            
+            const nodeHTML = `
+                <div class="node-wrapper flex flex-col items-center animate-fade-in" id="wrapper-${id}">
+                    ${getCardHTML(id, type)}
+                    <div class="node-children-wrapper hidden flex-col items-center mt-0 w-full" id="children-wrapper-${id}">
+                        <div class="w-[3px] h-8 bg-slate-300"></div>
+                        <div class="node-children flex flex-row items-start justify-center relative w-max min-w-full" id="children-${id}"></div>
+                    </div>
+                </div>
+            `;
+
+            const temp = document.createElement('div');
+            temp.innerHTML = nodeHTML;
+            const newElement = temp.firstElementChild;
+
+            if (currentAction === 'root') {
+                document.getElementById('main-canvas').appendChild(newElement);
+            } else if (currentAction === 'child') {
+                newElement.classList.add('tree-child');
+                const childrenWrapper = document.getElementById('children-wrapper-' + currentTargetId);
+                const childrenContainer = document.getElementById('children-' + currentTargetId);
+                childrenWrapper.classList.remove('hidden');
+                childrenWrapper.classList.add('flex');
+                childrenContainer.appendChild(newElement);
+            } else if (currentAction === 'parent') {
+                const targetWrapper = document.getElementById('wrapper-' + currentTargetId);
+                if (targetWrapper.classList.contains('tree-child')) newElement.classList.add('tree-child');
+                targetWrapper.classList.add('tree-child');
+                targetWrapper.parentNode.insertBefore(newElement, targetWrapper);
+                const newChildrenWrapper = document.getElementById('children-wrapper-' + id);
+                const newChildrenContainer = document.getElementById('children-' + id);
+                newChildrenWrapper.classList.remove('hidden');
+                newChildrenWrapper.classList.add('flex');
+                newChildrenContainer.appendChild(targetWrapper);
+            }
+
+            setTimeout(() => {
+                const primaTextarea = newElement.querySelector('textarea');
+                if(primaTextarea) primaTextarea.focus();
+                drawArrows();
+            }, 50);
+        }
+    </script>
+</body>
+</html>
