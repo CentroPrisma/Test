@@ -72,13 +72,13 @@
                     <h3>📋 Area Test</h3>
                     <p>Test clinici di umore e di personalità</p>
                 </div>
-                <!-- Bottone Area Fiscale (Esempio) -->
+                <!-- Bottone Area Fiscale -->
                 <div class="menu-card" onclick="window.location.href='Calcolatore.html'">
                     <h3>💶 Calcolo Tasse e Contributi</h3>
                     <p>Utile per la previsione e la gestione della p.iva forfettaria</p>
                 </div>
-                <!-- Bottone Mappe Concettuali (Esempio) -->
-                <div class="menu-card" onclick="showModal('Sezione in costruzione!', 'L\'area per le mappe cliniche e i materiali è in fase di sviluppo.')">
+                <!-- Bottone Mappe Cliniche -->
+                <div class="menu-card" onclick="switchView('view-mappe')">
                     <h3>🧠 Mappe Cliniche</h3>
                     <p>Risorse e concetti</p>
                 </div>
@@ -119,6 +119,35 @@
                 <div class="test-info">
                     <h3>YSQ-S3</h3>
                     <p style="margin:5px 0 0 0; color:#64748b;">Young Schema Questionnaire 90 item</p>
+                </div>
+                <div style="font-size:1.5rem; color:#cbd5e1;">➔</div>
+            </a>
+        </div>
+
+        <!-- VISTA 3: Mappe Cliniche -->
+        <div id="view-mappe" class="view-section">
+            <button class="back-btn" onclick="switchView('view-dashboard')">⬅ Torna al Menu</button>
+            
+            <a href="mappa_emozioni.html" class="test-card">
+                <div class="test-info">
+                    <h3>Mappa delle Emozioni</h3>
+                    <p style="margin:5px 0 0 0; color:#64748b;">Schema riassuntivo delle emozioni primarie e secondarie</p>
+                </div>
+                <div style="font-size:1.5rem; color:#cbd5e1;">➔</div>
+            </a>
+            
+            <a href="cicli_mantenimento.html" class="test-card">
+                <div class="test-info">
+                    <h3>Cicli di Mantenimento</h3>
+                    <p style="margin:5px 0 0 0; color:#64748b;">Schemi cognitivo-comportamentali</p>
+                </div>
+                <div style="font-size:1.5rem; color:#cbd5e1;">➔</div>
+            </a>
+
+            <a href="risorse_paziente.html" class="test-card">
+                <div class="test-info">
+                    <h3>Risorse del Paziente</h3>
+                    <p style="margin:5px 0 0 0; color:#64748b;">Scheda per l'individuazione delle risorse e degli stili di coping</p>
                 </div>
                 <div style="font-size:1.5rem; color:#cbd5e1;">➔</div>
             </a>
